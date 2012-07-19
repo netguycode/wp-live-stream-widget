@@ -364,6 +364,7 @@ class LiveStreamWidget extends WP_Widget {
 		
 		<?php
 			$content_types = live_stream_get_content_types();
+			//echo "content_types<pre>"; print_r($content_types);
 			if (($content_types) && (count($content_types))) {
 				sort($content_types);
 				?>
@@ -449,7 +450,7 @@ function live_stream_get_content_types() {
 
 	$content_types = array();
 
-	if ( $content_terms = get_transient( 'live_stream_widget_content_types' ) ) {
+	if ( $content_types = get_transient( 'live_stream_widget_content_types' ) ) {
 		return $content_types;
 	}
 
@@ -466,7 +467,7 @@ function live_stream_get_content_types() {
 	$posts_types = $wpdb->get_col($query_str);
 
 	if (($posts_types) && (count($posts_types))) {
-		$all_types = array_merge($all_types, $posts_types);
+		$content_types = array_merge($content_types, $posts_types);
 	}
 
 	/* Next, query the wp_site_commencts table to check if any items match the criteria */
@@ -704,7 +705,8 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 			}
 		}
 	}
-	krsort($all_items);
+	if (($all_items) && (count($all_items)))
+		krsort($all_items);
 	
 	set_site_transient( 'live_stream_widget_content_item_'. $widget_id, $all_items, 30 );
 	
