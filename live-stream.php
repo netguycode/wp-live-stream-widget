@@ -35,6 +35,9 @@ add_action( 'widgets_init', 'live_stream_widgets_init_proc' );
 add_action( 'wp_enqueue_scripts', 'live_stream_enqueue_scripts_proc' );
 add_action( 'admin_init', 'live_stream_admin_init' );
 
+include_once( dirname(__FILE__) . 'dash-notice/wpmudev-dash-notification.php' );
+
+// No longer using AJAX for the widget updates. But leave for later coding adventures. 
 //add_action( 'wp_ajax_live_stream_update_ajax', 'live_stream_update_ajax_proc' );
 //add_action( 'wp_ajax_nopriv_live_stream_update_ajax', 'live_stream_update_ajax_proc' );
 
