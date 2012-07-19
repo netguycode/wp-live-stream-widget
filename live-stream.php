@@ -35,7 +35,7 @@ add_action( 'widgets_init', 'live_stream_widgets_init_proc' );
 add_action( 'wp_enqueue_scripts', 'live_stream_enqueue_scripts_proc' );
 add_action( 'admin_init', 'live_stream_admin_init' );
 
-include_once( dirname(__FILE__) . 'dash-notice/wpmudev-dash-notification.php' );
+include_once( dirname(__FILE__) . '/lib/dash-notice/wpmudev-dash-notification.php' );
 
 // No longer using AJAX for the widget updates. But leave for later coding adventures. 
 //add_action( 'wp_ajax_live_stream_update_ajax', 'live_stream_update_ajax_proc' );
@@ -451,18 +451,17 @@ function live_stream_get_content_types() {
 
 	global $wpdb;
 
-	$content_types = array();
-
 	if ( $content_types = get_transient( 'live_stream_widget_content_types' ) ) {
 		return $content_types;
 	}
+
+	$content_types = array();
 
 	/* First query the post_types from the wp_site_posts table */
 	$select_query_str = "SELECT post_type FROM ". $wpdb->base_prefix . "site_posts ";
 
 	//$where_query_str = 'WHERE 1';
 	$where_query_str = 'WHERE post_type="post" ';	// We want to initially only allow Posts and exclude all other post types. 
-
 
 	$groupby_query_str = " GROUP BY post_type";
 
@@ -512,11 +511,11 @@ function live_stream_get_content_terms() {
 	
 	global $wpdb;
 
-	$all_terms = array();
-
 	if ( $all_terms = get_transient( 'live_stream_widget_content_terms' ) ) {
 		return $all_terms;
 	}
+
+	$all_terms = array();
 
 	$select_query_str = "SELECT * FROM ". $wpdb->base_prefix . "site_terms ";
 	$where_query_str = "WHERE type IN ('category', 'post_tag') ";
@@ -594,16 +593,16 @@ function live_stream_get_site_user_ids() {
 function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	global $wpdb;
-		
+			
+	if ( $all_items = get_site_transient( 'live_stream_widget_content_item_'. $widget_id ) ) {
+		return $all_items;
+	}
+
 	$post_items = array();
 	$comment_items = array();
 	$post_ids = array();
 	$terms_query_str = '';
 	$all_items = array();
-	
-	if ( $all_items = get_site_transient( 'live_stream_widget_content_item_'. $widget_id ) ) {
-		return $all_items;
-	}
 
 	$user_ids = live_stream_get_site_user_ids();
 
