@@ -1,0 +1,105 @@
+# Translation of the WordPress plugin Live Stream 1.0.0 Beta 5 by Paul Menard (Incsub).
+# Copyright (C) 2012 Paul Menard (Incsub)
+# This file is distributed under the same license as the Live Stream package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2012.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Live Stream 1.0.0 Beta 5\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/tag/live-stream\n"
+"POT-Creation-Date: 2012-05-16 13:43-0500\n"
+"PO-Revision-Date: 2012-05-16 14:45-0500\n"
+"Last-Translator: Paul Menard <paul@codehooligans.com>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: English\n"
+
+#: live-stream.php:155
+msgid "Show Posts and Comments in a Twitter-like updating widget"
+msgstr ""
+
+#. #-#-#-#-#  live-stream.pot (Live Stream 1.0.0 Beta 5)  #-#-#-#-#
+#. Plugin Name of the plugin/theme
+#: live-stream.php:161
+msgid "Live Stream"
+msgstr ""
+
+#: live-stream.php:317
+msgid "Widget Title:"
+msgstr ""
+
+#: live-stream.php:324
+msgid "Show Author Avatar?"
+msgstr ""
+
+#: live-stream.php:330
+msgid "Show content for all Blogs? <em>Unchecked = show current blog</em>"
+msgstr ""
+
+#: live-stream.php:335
+msgid "Simulate content updates? Will show latest 5 items as a delayed update in widget."
+msgstr ""
+
+#: live-stream.php:340
+msgid "Widget Height"
+msgstr ""
+
+#: live-stream.php:345
+msgid "200px - approx. 2-3 items"
+msgstr ""
+
+#: live-stream.php:347
+msgid "350px - approx. 4-5 items"
+msgstr ""
+
+#: live-stream.php:349
+msgid "500px - approx. 6-8 items"
+msgstr ""
+
+#: live-stream.php:351
+msgid "other - provide your own height"
+msgstr ""
+
+#: live-stream.php:356
+msgid "Specify Widget Height: <em>include px, em, etc. qualifies i.e. 300px</em>"
+msgstr ""
+
+#: live-stream.php:384
+msgid "All Types"
+msgstr ""
+
+#: live-stream.php:415
+msgid "All Terms"
+msgstr ""
+
+#: live-stream.php:527
+msgid "Tags"
+msgstr ""
+
+#: live-stream.php:529
+msgid "Categories"
+msgstr ""
+
+#: live-stream.php:760
+msgid " commented on "
+msgstr ""
+
+#: live-stream.php:775
+msgid "published"
+msgstr ""
+
+#: live-stream.php:794
+#, php-format
+msgid "%s ago "
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Paul Menard (Incsub)"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "http://premium.wpmudev.org/"
+msgstr ""
+

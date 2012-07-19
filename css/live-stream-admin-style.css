@@ -1,0 +1,4 @@
+#wpcontent select.widget-live-stream-content-types optgroup option,
+#wpcontent select.widget-live-stream-content-terms optgroup option {
+	padding-left: 10px;
+}
