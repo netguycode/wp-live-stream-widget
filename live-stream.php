@@ -233,8 +233,6 @@ class LiveStreamWidget extends WP_Widget {
 			unset($instance['height_other']);
 		}
 
-		//echo "new_instance<pre>"; print_r($new_instance); echo "</pre>";
-		//exit;
 		if (isset($new_instance['content_types'])) {			
 			$instance['content_types'] = array();
 			
@@ -300,7 +298,6 @@ class LiveStreamWidget extends WP_Widget {
 		);
 
 		$instance = wp_parse_args( (array) $instance, $defaults ); 
-		//echo "this<pre>"; print_r($this); echo "</pre>";
 		?>
 		
 		<p>
@@ -319,14 +316,6 @@ class LiveStreamWidget extends WP_Widget {
 			<label for="<?php echo $this->get_field_id( 'show_network' ); ?>"><?php 
 				_e('Show content for all Blogs? <em>Unchecked = show current blog</em>', LIVE_STREAM_I18N_DOMAIN); ?></label>
 		</p>
-<?php /* ?>
-		<p>
-			<input class="checkbox" type="checkbox" <?php checked( $instance['force_live'], 'on' ); ?> 
-				id="<?php echo $this->get_field_id( 'force_live' ); ?>" name="<?php echo $this->get_field_name( 'force_live' ); ?>" /> 
-			<label for="<?php echo $this->get_field_id( 'force_live' ); ?>"><?php _e('Simulate content updates? Will show latest 5 items as a delayed update in widget.', LIVE_STREAM_I18N_DOMAIN); ?></label>
-		</p>
-<?php */ ?>
-		
 		<p>
 			<label for="<?php echo $this->get_field_id( 'height' ); ?>"><?php 
 				_e('Widget Height', LIVE_STREAM_I18N_DOMAIN); ?></label>
@@ -400,7 +389,6 @@ class LiveStreamWidget extends WP_Widget {
 			}
 
 			$content_terms = live_stream_get_content_terms();
-			//echo "content_terms<pre>"; print_r($content_terms); echo "</pre>";
 			if (($content_terms) && (count($content_terms))) {
 				ksort($content_terms);
 
@@ -552,6 +540,16 @@ function live_stream_get_content_terms() {
 
 	return $all_terms;
 }
+
+/**
+ * Get the user_id of users for current blog. This will be used to filter the displayed items. 
+ *
+ * @since 1.0.0
+ * @see 
+ *
+ * @param none
+ * @return array of post_terms
+ */
 
 function live_stream_get_site_user_ids() {
 	global $wpdb;
