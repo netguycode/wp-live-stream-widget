@@ -2,7 +2,7 @@
 /*
 Plugin Name: Live Stream
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
-Description: Widget to show live Post/Comments activity updates.
+Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: Paul Menard (Incsub)
 Version: 1.0.0
 Author URI: http://premium.wpmudev.org/
@@ -362,7 +362,7 @@ class LiveStreamWidget extends WP_Widget {
 		<p>
 			<input class="checkbox" type="checkbox" <?php checked( $instance['show_y_scroll'], 'on' ); ?> 
 				id="<?php echo $this->get_field_id( 'show_y_scroll' ); ?>" name="<?php echo $this->get_field_name( 'show_y_scroll' ); ?>" /> 
-			<label for="<?php echo $this->get_field_id( 'show_y_scroll' ); ?>"><?php _e('Show Vertical Scollbar?', LIVE_STREAM_I18N_DOMAIN); ?></label>
+			<label for="<?php echo $this->get_field_id( 'show_y_scroll' ); ?>"><?php _e('Show Vertical Scrollbar?', LIVE_STREAM_I18N_DOMAIN); ?></label>
 		</p>
 		
 		<?php
@@ -390,46 +390,49 @@ class LiveStreamWidget extends WP_Widget {
 					</select>
 				</p>
 				<?php
-			}
+				
+				
+				$content_terms = live_stream_get_content_terms();
+				if (($content_terms) && (count($content_terms))) {
+					ksort($content_terms);
 
-			$content_terms = live_stream_get_content_terms();
-			if (($content_terms) && (count($content_terms))) {
-				ksort($content_terms);
+					$term_count = count($content_terms) +1 ;
+					foreach($content_terms as $term_group => $terms) {
+						$term_count += count($terms);
+					}
+					?>
+					<p>
+						<label for="<?php echo $this->get_field_id( 'content_terms' ); ?>"><?php 
+							/* _e('Terms: <em>Shift+click to select multiple</em>', LIVE_STREAM_I18N_DOMAIN); */ ?></label> 
+						<select id="<?php echo $this->get_field_id( 'content_terms' ); ?>" <?php /* multiple="multiple" */ ?>
+							class="widget-live-stream-content-terms"
+							size="1<?php /* if ($term_count < 15) { echo $term_count; } else { echo "15"; } */ ?>"
+							name="<?php echo $this->get_field_name( 'content_terms'); ?>[]" class="widefat" style="width:100%;">
+							<option value="" <?php if (!count($instance['content_terms'])) { echo ' selected="selected" '; } ?>><?php
+								_e('All Terms', LIVE_STREAM_I18N_DOMAIN); ?></option>
 
-				$term_count = count($content_terms) +1 ;
-				foreach($content_terms as $term_group => $terms) {
-					$term_count += count($terms);
-				}
-				?>
-				<p>
-					<label for="<?php echo $this->get_field_id( 'content_terms' ); ?>"><?php 
-						/* _e('Terms: <em>Shift+click to select multiple</em>', LIVE_STREAM_I18N_DOMAIN); */ ?></label> 
-					<select id="<?php echo $this->get_field_id( 'content_terms' ); ?>" <?php /* multiple="multiple" */ ?>
-						class="widget-live-stream-content-terms"
-						size="1<?php /* if ($term_count < 15) { echo $term_count; } else { echo "15"; } */ ?>"
-						name="<?php echo $this->get_field_name( 'content_terms'); ?>[]" class="widefat" style="width:100%;">
-						<option value="" <?php if (!count($instance['content_terms'])) { echo ' selected="selected" '; } ?>><?php
-							_e('All Terms', LIVE_STREAM_I18N_DOMAIN); ?></option>
+							<?php
+								foreach($content_terms as $term_group => $terms) {
+									if (!count($terms)) continue;
+									asort($terms);
 
-						<?php
-							foreach($content_terms as $term_group => $terms) {
-								if (!count($terms)) continue;
-								asort($terms);
-								
-								?><optgroup label="<?php echo $term_group; ?>"><?php
+									?><optgroup label="<?php echo $term_group; ?>"><?php
 
-								foreach($terms as $term) {
-									?><option value="<?php echo $term->term_id; ?>" <?php 
-									if (array_search($term->term_id, $instance['content_terms']) !== false) 
-									{ echo ' selected="selected" '; } ?>><?php echo $term->name; ?></option><?php						
+									foreach($terms as $term) {
+										?><option value="<?php echo $term->term_id; ?>" <?php 
+										if (array_search($term->term_id, $instance['content_terms']) !== false) 
+										{ echo ' selected="selected" '; } ?>><?php echo $term->name; ?></option><?php						
+									}
+
+									?></optgroup><?php
 								}
-							
-								?></optgroup><?php
-							}
-						?>
-					</select>
-				</p>
-				<?php				
+							?>
+						</select>
+					</p>
+					<?php				
+				}
+			} else {
+				?><p><?php echo __('This widget requires at least one of the following Indexer plugins installed: ', USER_REPORTS_I18N_DOMAIN) .' <a target="_blank" href="http://premium.wpmudev.org/project/post-indexer/">'. __('Post Indexer', USER_REPORTS_I18N_DOMAIN) . '</a> or <a target="_blank" href="http://premium.wpmudev.org/project/comment-indexer/">'. __('Comment Indexer', USER_REPORTS_I18N_DOMAIN) .'</a>'; ?></p><?php
 			}
 	}
 }
@@ -456,36 +459,42 @@ function live_stream_get_content_types() {
 	}
 
 	$content_types = array();
+	
+	if (function_exists('post_indexer_post_insert_update')) {
+	
+		/* First query the post_types from the wp_site_posts table */
+		$select_query_str = "SELECT post_type FROM ". $wpdb->base_prefix . "site_posts ";
 
-	/* First query the post_types from the wp_site_posts table */
-	$select_query_str = "SELECT post_type FROM ". $wpdb->base_prefix . "site_posts ";
+		//$where_query_str = 'WHERE 1';
+		$where_query_str = 'WHERE post_type="post" ';	// We want to initially only allow Posts and exclude all other post types. 
 
-	//$where_query_str = 'WHERE 1';
-	$where_query_str = 'WHERE post_type="post" ';	// We want to initially only allow Posts and exclude all other post types. 
+		$groupby_query_str = " GROUP BY post_type";
 
-	$groupby_query_str = " GROUP BY post_type";
+		$query_str = $select_query_str . $where_query_str . $groupby_query_str;
+		$posts_types = $wpdb->get_col($query_str);
 
-	$query_str = $select_query_str . $where_query_str . $groupby_query_str;
-	$posts_types = $wpdb->get_col($query_str);
-
-	if (($posts_types) && (count($posts_types))) {
-		$content_types = array_merge($content_types, $posts_types);
+		if (($posts_types) && (count($posts_types))) {
+			$content_types = array_merge($content_types, $posts_types);
+		}
 	}
 
-	/* Next, query the wp_site_commencts table to check if any items match the criteria */
-	$select_query_str = "SELECT site_comment_id FROM ". $wpdb->base_prefix . "site_comments ";
-	$where_query_str = 'WHERE 1';
+	if (function_exists('comment_indexer_comment_insert_update')) {
 
-	$query_str = $select_query_str . $where_query_str;
-	$comment_types = $wpdb->get_col($query_str);
+		/* Next, query the wp_site_commencts table to check if any items match the criteria */
+		$select_query_str = "SELECT site_comment_id FROM ". $wpdb->base_prefix . "site_comments ";
+		$where_query_str = 'WHERE 1';
 
-	if (($comment_types) && (count($comment_types))) {
-		/* since the wp_site_comments table does not have an actual post_type fields we create a 
-			dummy array item to merge the all_types array */
-		$comment_array = array('comment');
-		$content_types = array_merge($content_types, $comment_array);
+		$query_str = $select_query_str . $where_query_str;
+		$comment_types = $wpdb->get_col($query_str);
+
+		if (($comment_types) && (count($comment_types))) {
+			/* since the wp_site_comments table does not have an actual post_type fields we create a 
+				dummy array item to merge the all_types array */
+			$comment_array = array('comment');
+			$content_types = array_merge($content_types, $comment_array);
+		}
 	}
-
+	
 	/* finally sort the array so they show in alpha order */
 	if ((isset($content_types)) && (count($content_types)))
 		sort($content_types);
@@ -517,26 +526,28 @@ function live_stream_get_content_terms() {
 
 	$all_terms = array();
 
-	$select_query_str = "SELECT * FROM ". $wpdb->base_prefix . "site_terms ";
-	$where_query_str = "WHERE type IN ('category', 'post_tag') ";
+	if (function_exists('post_indexer_post_insert_update')) {
+
+		$select_query_str = "SELECT * FROM ". $wpdb->base_prefix . "site_terms ";
+		$where_query_str = "WHERE type IN ('category', 'post_tag') ";
 	
-	$query_str = $select_query_str . $where_query_str;
-	//echo "query_str=[". $query_str ."]<br />";
-	$post_terms = $wpdb->get_results($query_str);
+		$query_str = $select_query_str . $where_query_str;
+		$post_terms = $wpdb->get_results($query_str);
+	
+		if (($post_terms) && (count($post_terms))) {
+			//echo "post_terms<pre>"; print_r($post_terms); echo "</pre>";
 
-	if (($post_terms) && (count($post_terms))) {
-		//echo "post_terms<pre>"; print_r($post_terms); echo "</pre>";
-
-		foreach($post_terms as $post_term) {
-			if ($post_term->type == "post_tag")
-				$post_term->type = __("Tags", LIVE_STREAM_I18N_DOMAIN);
-			if ($post_term->type == "category")
-				$post_term->type = __("Categories", LIVE_STREAM_I18N_DOMAIN);
+			foreach($post_terms as $post_term) {
+				if ($post_term->type == "post_tag")
+					$post_term->type = __("Tags", LIVE_STREAM_I18N_DOMAIN);
+				if ($post_term->type == "category")
+					$post_term->type = __("Categories", LIVE_STREAM_I18N_DOMAIN);
 				
-			if (!isset($all_terms[$post_term->type]))
-				$all_terms[$post_term->type] = array();
+				if (!isset($all_terms[$post_term->type]))
+					$all_terms[$post_term->type] = array();
 			
-			$all_terms[$post_term->type][$post_term->name] = $post_term;
+				$all_terms[$post_term->type][$post_term->name] = $post_term;
+			}
 		}
 	}
 	set_transient( 'live_stream_widget_content_terms', $all_terms, 300 );
@@ -557,6 +568,7 @@ function live_stream_get_content_terms() {
 function live_stream_get_site_user_ids() {
 	global $wpdb;
 	
+	//delete_site_transient( 'live_stream_widget_user_ids' );
 	if ( $user_ids = get_site_transient( 'live_stream_widget_user_ids' ) ) {
 		return $user_ids;
 	}
@@ -605,7 +617,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	$all_items = array();
 
 	$user_ids = live_stream_get_site_user_ids();
-
+	
 	if ( (isset($instance['content_terms'])) && (count($instance['content_terms'])) ) {
 	
 		foreach($instance['content_terms'] as $term_id) {
@@ -624,7 +636,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	if ( (isset($instance['content_types'])) && (array_search('post', $instance['content_types']) !== false) ) {
 	
-		$select_query_str 	= "SELECT p.blog_id as blog_id, p.site_id as site_id, p.post_id as post_id, p.post_author as post_author_id, p.post_type as post_type, p.post_title as post_title, p.post_permalink as post_permalink, p.post_published_stamp as post_published_stamp FROM ". $wpdb->base_prefix . "site_posts p";		
+		$select_query_str 	= "SELECT p.site_post_id, p.blog_id as blog_id, p.site_id as site_id, p.post_id as post_id, p.post_author as post_author_id, p.post_type as post_type, p.post_title as post_title, p.post_permalink as post_permalink, p.post_published_stamp as post_published_stamp FROM ". $wpdb->base_prefix . "site_posts p";		
 		$where_query_str 	= "WHERE 1";
 
 		if ((isset($user_ids)) && (count($user_ids))) {
@@ -734,9 +746,6 @@ function live_stream_build_display($instance, $items, $echo = true) {
 	krsort($items);
 	$items_output = '';
 	
-	//echo "instance<pre>"; print_r($instance); echo "</pre>";
-	
-	//$blogs = live_stream_get_blogs();	
 	$blogs = array();
 		
 	foreach($items as $key => $item) {
@@ -774,11 +783,11 @@ function live_stream_build_display($instance, $items, $echo = true) {
 		if (intval($item->post_author_id) )
 			$user_data = get_userdata( intval($item->post_author_id) );
 		else { 
-			$user_data->email 			= '';
+			$user_data->user_email 		= '';
 			$user_data->display_name 	= '';
 			
 			if ((isset($item->post_author_email)) && (strlen($item->post_author_email))) {
-				$user_data->email = $item->post_author_email;
+				$user_data->user_email = $item->post_author_email;
 			}
 			if ((isset($item->post_author_name)) && (strlen($item->post_author_name))) {
 				$user_data->display_name = $item->post_author_name;
@@ -803,10 +812,12 @@ function live_stream_build_display($instance, $items, $echo = true) {
 		
 		/* User Avatar */
 		if ((isset($instance['show_avatar'])) && ($instance['show_avatar'] == "on")) {
-			$avatar = get_avatar($user_data->email, 30, null, $user_data->display_name);
-			$item_output .= '<div class="live-stream-avatar">';
-			$item_output .= $author_anchor_begin . $avatar . $author_anchor_end;
-			$item_output .= '</div>';	
+			$avatar = get_avatar($user_data->user_email, 30, null, $user_data->display_name);
+			if (!empty($avatar)) {
+				$item_output .= '<div class="live-stream-avatar avatar-'. $user_data->email .'">';
+				$item_output .= $author_anchor_begin . $avatar . $author_anchor_end;
+				$item_output .= '</div>';	
+			}
 		}
 		
 		/* Begine text container wrapper */
@@ -873,4 +884,3 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			return $items_output;
 	}		
 }
-
