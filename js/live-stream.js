@@ -1,5 +1,6 @@
 jQuery(document).ready( function($) {
 
+/*
 	setInterval(function() {
 		jQuery('.live-stream-widget').each(function() {
 			var widget_id = jQuery(this).attr('id');
@@ -13,4 +14,5 @@ jQuery(document).ready( function($) {
 	        }
 		});
 	}, 3000);	
+*/
 });

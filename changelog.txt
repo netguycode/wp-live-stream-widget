@@ -1,10 +1,19 @@
-Plugin Name: Live Stream Widget
+----------------------------------------------------------------------
+Live Stream Widget
 Author: Paul Menard (incsub)
+----------------------------------------------------------------------
 
 Change Log:
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
-1.0 - 7/18/2012
+1.0.1 - 2012/08/07
+----------------------------------------------------------------------
+- Added dropdown to allow Local - Local users and local content, Network - local user and network content, All users and all content
+- Added logic to support local Post/Comments when Post Indexer and Comment Indexer plugins are not enabled. When selecting local
+- Updated taxonomy terms selection logic to allow selecting multiple terms from various taxonomies. Still only support Categories and Post Tags
+- Corrected logic for comments to only pull approved comments
+
+1.0 - 2012/7/18
 ----------------------------------------------------------------------
 - Initial Release
