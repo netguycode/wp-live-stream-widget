@@ -7,6 +7,12 @@ Change Log:
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
+1.0.2 - 2012/09/19
+----------------------------------------------------------------------
+- Added in logic to support AJAX refresh calls for live data updates instead of just on page load.
+- Added support for non-Multisite which will pull from local Post, Comments and Taxonomies
+
+
 1.0.1 - 2012/08/07
 ----------------------------------------------------------------------
 - Added dropdown to allow Local - Local users and local content, Network - local user and network content, All users and all content
