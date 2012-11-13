@@ -1201,7 +1201,7 @@ function live_stream_build_display($instance, $items, $echo = true) {
 	
 	$blogs = array();
 	
-	echo "instance<pre>"; print_r($instance); echo "</pre>";	
+	//echo "instance<pre>"; print_r($instance); echo "</pre>";	
 	foreach($items as $key => $item) {
 
 		if (isset($_POST['timekey'])) {
