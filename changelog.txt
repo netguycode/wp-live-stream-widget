@@ -7,6 +7,11 @@ Change Log:
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
+1.0.3 - 2012/11/07
+----------------------------------------------------------------------
+- Added logic to support Post Indexer 3 Network_Query object instead of direct database calls.
+- Changed display logic when showing local content and posts only http://premium.wpmudev.org/forums/topic/going-to-last-comment-posted
+
 1.0.2 - 2012/09/19
 ----------------------------------------------------------------------
 - Added in logic to support AJAX refresh calls for live data updates instead of just on page load.

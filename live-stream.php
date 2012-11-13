@@ -4,7 +4,7 @@ Plugin Name: Live Stream Widget
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
 Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: Paul Menard (Incsub)
-Version: 1.0.2
+Version: 1.0.3
 Author URI: http://premium.wpmudev.org/
 WDP ID: 679182
 Text Domain: live-stream-widget
@@ -288,7 +288,7 @@ class LiveStreamWidget extends WP_Widget {
 
 		if (isset($new_instance['show_users_content'])) {
 			$instance['show_users_content']	= esc_attr($new_instance['show_users_content']);
-			if (($instance['show_users_content'] != 'local') && ($instance['show_users_content'] != 'network') && ($instance['show_users_content'] != "all"))
+			if (($instance['show_users_content'] != 'local') && ($instance['show_users_content'] != 'site') && ($instance['show_users_content'] != "all"))
 				$instance['show_users_content']	= 'local';
 		}
 		else
@@ -455,21 +455,32 @@ class LiveStreamWidget extends WP_Widget {
 	}
 	
 	function show_widget_admin_content_source($instance) {
+		
+		// We changed 'network' to 'site'. Need to conver the instance var is set.		
+		if ($instance['show_users_content'] == 'network') $instance['show_users_content'] = "site";
+		
 		if ( (has_comment_indexer_plugin()) && (has_post_indexer_plugin()) ) { 
+			$source_content_array = array(
+				'local'	=>	__('Local - Content from only this site.', LIVE_STREAM_I18N_DOMAIN),
+				'site'	=>	__('Site - Content from all sites created by users from this site.', LIVE_STREAM_I18N_DOMAIN),
+				'all'	=>	__('All - Content by all users from all sites', LIVE_STREAM_I18N_DOMAIN)
+			);
+			
+			if ( (function_exists('is_edublogs')) && (is_edublogs()) ) { 
+				unset($source_content_array['all']);
+			}
+			
 			?>
 			<p><label><?php _e('What content to show', LIVE_STREAM_I18N_DOMAIN);?>:<br />
 			<select id="<?php echo $this->get_field_id( 'show_users_content' ); ?>" 
 				name="<?php echo $this->get_field_name( 'show_users_content'); ?>" class="widefat" style="width:100%;">
-				<option value="local" <?php if ($instance['show_users_content'] == "local") { echo ' selected="selected" '; }?>><?php 
-					_e('Local - Content from only this site.', LIVE_STREAM_I18N_DOMAIN); ?></option>
-
-				<option value="network" <?php if ($instance['show_users_content'] == "network") { echo ' selected="selected" '; }?>><?php 
-					_e('Network - Content from all sites created by users from this site.', LIVE_STREAM_I18N_DOMAIN); ?></option>
-
-				<?php if ( (function_exists('is_edublogs')) && (is_edublogs()) ) { } else { ?>
-					<option value="all" <?php if ($instance['show_users_content'] == "all") { echo ' selected="selected" '; }?>><?php 
-						_e('All - Content by all users from all sites', LIVE_STREAM_I18N_DOMAIN); ?></option>
-				<?php } ?>
+				<?php
+					foreach($source_content_array as $_key => $_label) {
+						?><option value="<?php echo $_key; ?>" <?php 
+							if ($instance['show_users_content'] == $_key) { echo ' selected="selected" '; }?>><?php 
+							echo $_label ?></option><?php
+					}
+				?>
 			</select><br />
 			<?php 
 		} 
@@ -485,8 +496,7 @@ class LiveStreamWidget extends WP_Widget {
 				<label for="<?php echo $this->get_field_id( 'content_types' ); ?>"><?php 
 					 _e('Content Types:', LIVE_STREAM_I18N_DOMAIN);  ?></label> 
 				<select id="<?php echo $this->get_field_id( 'content_types' ); ?>" 
-					class="widget-live-stream-content-types"						
-					size="1"
+					class="widget-live-stream-content-types" size="1"
 					name="<?php echo $this->get_field_name( 'content_types' ); ?>[]" class="widefat">
 					<option value="" <?php if (!count($instance['content_types'])) { echo ' selected="selected" '; } ?>><?php 
 						_e('All Types', LIVE_STREAM_I18N_DOMAIN); ?></option>
@@ -510,6 +520,7 @@ class LiveStreamWidget extends WP_Widget {
 		foreach($tax_names as $tax_slug) {
 
 			$tax_terms = get_source_tax_terms($tax_slug, $instance['show_users_content']);
+			//echo "tax_terms<pre>"; print_r($tax_terms); echo "</pre>";
 			if (($tax_terms) && (count($tax_terms))) {		
 						
 				$taxonomy = get_taxonomy( $tax_slug );
@@ -631,12 +642,16 @@ function get_source_tax_terms($tax_slug, $show_users_content='local') {
 	if (($show_users_content == "local"))
 		$content_source = "local";
 	else
-		$content_source = "network";
-				
-	if ( ($content_source == "local") 
-	 || ((!function_exists('post_indexer_post_insert_update')) && (!function_exists('comment_indexer_comment_insert_update'))) ) {
+		$content_source = "site";
+	
+	$post_indexer_plugin 	= has_post_indexer_plugin();			
+	$comment_indexer_plugin = has_comment_indexer_plugin();
+	
+	$trans_key = 'live_stream_widget_terms_'. $content_source .'_'. $tax_slug;
 
-		$trans_key = 'live_stream_widget_terms_'. $content_source .'_'. $tax_slug;
+	if ( ($content_source == "local") 
+	 ||  (!$post_indexer_plugin) && (!$comment_indexer_plugin) ) {
+
 		$tax_terms = get_transient( $trans_key );
 		if ($tax_terms !== false)
 			return $tax_terms;
@@ -650,22 +665,38 @@ function get_source_tax_terms($tax_slug, $show_users_content='local') {
 		return $tax_terms;
 
 	} else {
+		
 		$trans_key = 'live_stream_widget_terms_'. $content_source .'_'. $tax_slug;
 		$tax_terms = get_site_transient( $trans_key );
 		if ($tax_terms !== false)
 			return $tax_terms;
 
-		$select_query_str = "SELECT * FROM ". $wpdb->base_prefix . "site_terms ";
-		$where_query_str = " WHERE type IN ('". $tax_slug ."') ";
-		$orderby_query_str = " ORDER BY name ";
-		$query_str = $select_query_str . $where_query_str . $orderby_query_str;
-		$tax_terms = $wpdb->get_results($query_str);
+		if ($post_indexer_plugin === 2) {
 
+			$select_query_str = "SELECT * FROM ". $wpdb->base_prefix . "site_terms ";
+			$where_query_str = " WHERE type IN ('". $tax_slug ."') ";
+			$orderby_query_str = " ORDER BY name ";
+			$query_str = $select_query_str . $where_query_str . $orderby_query_str;
+			$tax_terms = $wpdb->get_results($query_str);
+		} else if (($post_indexer_plugin === 3) && (class_exists('postindexermodel'))) {
+
+			$model = new postindexermodel();
+			$select_query_str = "SELECT t.term_id term_id, t.name name, t.slug slug, tt.count count FROM ". 
+				$model->network_terms ." AS t INNER JOIN ". $model->network_term_taxonomy 
+				." AS tt ON t.term_id = tt.term_id";
+			$where_query_str = " WHERE tt.taxonomy IN ('". $tax_slug ."') ";
+			$orderby_query_str = " ORDER BY name ";
+			$query_str = $select_query_str . $where_query_str . $orderby_query_str;
+			$tax_terms = $wpdb->get_results($query_str);			
+		}
+		
 		// When we read from the Post Indexer term table we don't get the parent field. This is required when we call the WP Walker class
-		if (($tax_terms) && (count($tax_terms))) {
+		if ((isset($tax_terms)) && (count($tax_terms))) {
 			foreach($tax_terms as $idx => $term) {
 				$tax_terms[$idx]->parent = 0;
 			}
+		} else {
+			$tax_terms = array();
 		}
 		set_site_transient( $trans_key, $tax_terms, 300 );
 
@@ -674,6 +705,7 @@ function get_source_tax_terms($tax_slug, $show_users_content='local') {
 }
 
 function get_instance_user_content($instance) {
+	
  	if ( (!has_post_indexer_plugin()) && (!has_comment_indexer_plugin()) ) {
 		return 'local';
 	}
@@ -692,11 +724,15 @@ function get_instance_user_content($instance) {
  */
 
 function has_post_indexer_plugin() {
-	if (function_exists('post_indexer_post_insert_update'))
-		return true;
-	else
-		return false;
 	
+	if ((isset($post_indexer_current_version)) && (!empty($post_indexer_current_version))) {
+		return 2;
+	}
+
+	else if (class_exists('postindexermodel')) {
+		return 3;
+	}
+	return false;
 }
 
 /**
@@ -711,8 +747,8 @@ function has_post_indexer_plugin() {
 function has_comment_indexer_plugin() {
 	if (function_exists('comment_indexer_comment_insert_update'))
 		return true;
-	else
-		return false;	
+
+	return false;	
 }
 
 /**
@@ -734,22 +770,20 @@ function live_stream_get_site_user_ids($instance, $widget_id) {
 
 	$site_admin_ids = array();
 
-//	if ((isset($instance['show_site_admins'])) && ($instance['show_site_admins'] == "on")) {
-		$site_admins_logins = get_super_admins();
-		if ($site_admins_logins) {
-			foreach($site_admins_logins as $site_admins_login) {
-				$user = get_user_by('login', $site_admins_login);
-				if (intval($user->ID)) {
-					
-					$blogs = get_blogs_of_user( $user->ID );
-					
-					if (($blogs) && (isset($blogs[$wpdb->blogid]))) { 
-						$site_admin_ids[] = $user->ID;
-					}
+	$site_admins_logins = get_super_admins();
+	if ($site_admins_logins) {
+		foreach($site_admins_logins as $site_admins_login) {
+			$user = get_user_by('login', $site_admins_login);
+			if (intval($user->ID)) {
+				
+				$blogs = get_blogs_of_user( $user->ID );
+				
+				if (($blogs) && (isset($blogs[$wpdb->blogid]))) { 
+					$site_admin_ids[] = $user->ID;
 				}
 			}
-		}	
-//	}
+		}
+	}	
 	
 	$user_args = array(
 		'number' 	=> 	0,
@@ -788,9 +822,9 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	global $wpdb;
 
-	if ( $all_items = get_transient( 'live_stream_widget_content_item_'. $widget_id ) ) {
-		return $all_items;
-	}
+//	if ( $all_items = get_transient( 'live_stream_widget_content_item_'. $widget_id ) ) {
+//		return $all_items;
+//	}
 		
 	$post_items 	= array();
 	$comment_items 	= array();
@@ -812,10 +846,12 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	if (($instance['show_users_content'] == '') || ($instance['show_users_content'] == "local"))
 		$content_source = "local";
 	else
-		$content_source = "network";
+		$content_source = "site";
 
-	if ($instance['show_users_content'] == "network")
+	if ($instance['show_users_content'] == "site")
 		$user_ids = live_stream_get_site_user_ids($instance, $widget_id);
+	
+	$post_indexer_plugin 	= has_post_indexer_plugin();			
 	
 	$tax_terms_query_str = '';
 	if ( (isset($instance['content_terms'])) && (count($instance['content_terms'])) ) {
@@ -829,34 +865,19 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 			if ($tax_slug == "_select_all_")
 				continue;
 			
-			// If the user selected the 'select all' checkbox on the terms set then we can 
-			if (isset($instance['content_terms']['_select_all_'][$tax_slug])) {
-				$tax_terms_transient = get_source_tax_terms($tax_slug, $instance['show_users_content']);
-				if (($tax_terms_transient) && (count($tax_terms_transient))) {
-
-					if (!isset($tax_terms_array[$tax_slug]))
-						$tax_terms_array[$tax_slug] = array();
-
-					foreach($tax_terms_transient as $tax_term) {
-						$tax_terms_array[$tax_slug][] = $tax_term->term_id;						
-					}
+			// If the user selected the 'select all' checkbox on the terms set then we can ignore the taxonomy terms selected
+			if (!isset($instance['content_terms']['_select_all_'][$tax_slug])) {
+				foreach($tax_terms_transient as $tax_term) {
+					$tax_terms_array[$tax_slug][] = $tax_term->term_id;						
 				}
-			}
-	
-			else if (($tax_terms) && (count($tax_terms))) {
-				if (!isset($tax_terms_array[$tax_slug]))
-					$tax_terms_array[$tax_slug] = array();
-
-				$tax_terms_array[$tax_slug] = array_merge($tax_terms_array[$tax_slug], $tax_terms);
 			}
 		}
 		
 		if (count($tax_terms_array)) {
-			//echo "tax_terms_array<pre>"; print_r($tax_terms_array); echo "</pre>";
 			foreach($tax_terms_array as $tax_slug => $tax_set) {
 				if (!count($tax_set)) continue;
 				
-				if ($content_source == "local") {
+				if (($content_source == "local") || (($post_indexer_plugin === 3) && (class_exists('Network_Query')))) {
 					$tax_query_item = array(
 						'taxonomy' 	=> $tax_slug,
 						'field' 	=> 'id',
@@ -868,12 +889,10 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 						if (strlen($tax_terms_query_str)) $tax_terms_query_str .= " OR ";
 						$tax_terms_query_str .= " p.post_terms like '%|". $term_id ."|%' ";		
 					}
-				}
-				
+				}				
 			}
 		}
 	}
-
 	
 	if ( (isset($instance['content_types'])) && (array_search('post', $instance['content_types']) !== false) ) {
 	
@@ -892,7 +911,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				$post_query_args['tax_query'] = $tax_query;
 			}
 			
-			// There is n provision in the WP_Query object to say "greater than date". So have to hack the WHERE
+			// There is no provision in the WP_Query object to say "greater than date". So have to hack the WHERE
 			if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
 				add_filter( 'posts_where', 'live_stream_filter_posts_timekey_where' );
 			}
@@ -907,7 +926,6 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				foreach($post_query->posts as $post_item) {
 					$post_item->post_id 				= $post_item->ID;
 					$post_item->blog_id					= $wpdb->blogid;
-					$post_item->site_id					= $wpdb->siteid;
 					$post_item->post_author_id 			= $post_item->post_author;
 					$post_item->post_permalink 			= get_permalink($post_item->ID);
 					$post_item->post_published_stamp	= strtotime($post_item->post_date_gmt);
@@ -917,61 +935,105 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				}
 			}
 		} else {
+			
+			if ($post_indexer_plugin === 2) {
+				$select_query_str 	= "SELECT 
+					p.site_post_id, 
+					p.blog_id as blog_id, 
+					p.post_id as post_id, 
+					p.post_author as post_author_id, 
+					p.post_type as post_type, 
+					p.post_title as post_title, 
+					p.post_permalink as post_permalink, 
+					p.post_published_stamp as post_published_stamp 
+					FROM ". $wpdb->base_prefix . "site_posts p";		
+
+				$where_query_str 	= "WHERE 1";
+
+				if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
+					$where_query_str .= " AND p.post_published_stamp > ". $instance['timekey'];		
+				}
+
+				if (($instance['show_users_content'] == "site") && (isset($user_ids)) && (count($user_ids))) {
+					$where_query_str .= " AND p.post_author IN (". implode(',', $user_ids) .") ";			
+				}
+
+				if (strlen($tax_terms_query_str)) {
+					$where_query_str .= " AND (". $tax_terms_query_str .") ";
+				}
+
+				if ($instance['show_users_content'] == "local") {
+					$where_query_str .= " AND p.blog_id=". $wpdb->blogid ." ";
+				}
+
+				$content_types_str = '';
+				if ((isset($instance['content_types'])) && (count($instance['content_types']))) {
+					foreach($instance['content_types'] as $type) {
+						if (strlen($content_types_str)) 
+							$content_types_str .= ",";
+
+						$content_types_str .= "'". $type ."'";
+					}
+
+					if (strlen($content_types_str)) {
+						$where_query_str .= " AND p.post_type IN (". $content_types_str .") ";
+					}
+				}
+
+				$orderby_query_str 	= " ORDER BY p.post_published_stamp DESC";
+				$limit_query_str = " LIMIT ". $instance['items_number'];
+
+				$query_str = $select_query_str ." ". $where_query_str ." ". $orderby_query_str ." ". $limit_query_str;
+				//echo "query_str=[". $query_str ."]<br /><br />";
+				$post_items = $wpdb->get_results($query_str);
+				if ((isset($post_items)) && (count($post_items))) {
+					foreach($post_items as $item) {
+						$post_ids[] = $item->post_id;			
+						$all_items[$item->post_published_stamp] = $item;
+					}
+				}
 				
-			$select_query_str 	= "SELECT 
-			p.site_post_id, 
-			p.blog_id as blog_id, 
-			p.site_id as site_id, 
-			p.post_id as post_id, 
-			p.post_author as post_author_id, 
-			p.post_type as post_type, 
-			p.post_title as post_title, 
-			p.post_permalink as post_permalink, 
-			p.post_published_stamp as post_published_stamp 
-			FROM ". $wpdb->base_prefix . "site_posts p";		
+			} else if (($post_indexer_plugin === 3) && (class_exists('Network_Query'))) {
 
-			$where_query_str 	= "WHERE 1";
+				$post_query_args = array( 
+					'post_type' 		=> $instance['content_types'], 
+					'post_status'		=>	'publish',
+					'posts_per_page'	=>	$instance['items_number'],
+					'orderby'			=>	'date',
+					'order'				=>	'DESC'
+				);
 
-			if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
-				$where_query_str .= " AND p.post_published_stamp > ". $instance['timekey'];		
-			}
-
-			if (($instance['show_users_content'] == "network") && (isset($user_ids)) && (count($user_ids))) {
-				$where_query_str .= " AND p.post_author IN (". implode(',', $user_ids) .") ";			
-			}
-
-			if (strlen($tax_terms_query_str)) {
-				$where_query_str .= " AND (". $tax_terms_query_str .") ";
-			}
-			
-			if ($instance['show_users_content'] == "local") {
-				$where_query_str .= " AND p.blog_id=". $wpdb->blogid ." ";
-			}
-
-			$content_types_str = '';
-			if ((isset($instance['content_types'])) && (count($instance['content_types']))) {
-				foreach($instance['content_types'] as $type) {
-					if (strlen($content_types_str)) 
-						$content_types_str .= ",";
-
-					$content_types_str .= "'". $type ."'";
+				if ((isset($tax_query)) && (count($tax_query))) {
+					$tax_query['relation'] = 'OR';
+					$post_query_args['tax_query'] = $tax_query;
 				}
 
-				if (strlen($content_types_str)) {
-					$where_query_str .= " AND p.post_type IN (". $content_types_str .") ";
+				// There is n provision in the WP_Query object to say "greater than date". So have to hack the WHERE
+				if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
+					add_filter( 'posts_where', 'live_stream_filter_posts_timekey_where' );
 				}
-			}
 
-			$orderby_query_str 	= " ORDER BY p.post_published_stamp DESC";
-			$limit_query_str = " LIMIT ". $instance['items_number'];
-			
-			$query_str = $select_query_str ." ". $where_query_str ." ". $orderby_query_str ." ". $limit_query_str;
-			//echo "query_str=[". $query_str ."]<br /><br />";
-			$post_items = $wpdb->get_results($query_str);
-			if ((isset($post_items)) && (count($post_items))) {
-				foreach($post_items as $item) {
-					$post_ids[] = $item->post_id;			
-					$all_items[$item->post_published_stamp] = $item;
+				// We need to turn off error_reporting to prevent Notices showing in case user has full reporting turned on. 
+				$current_error_reporting = error_reporting();
+				error_reporting(0);
+				$post_query = new Network_Query($post_query_args);
+
+				if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
+					remove_filter( 'posts_where', 'live_stream_filter_posts_timekey_where' );
+				}
+
+				if (($post_query->posts) && (count($post_query->posts))) {
+					foreach($post_query->posts as $post_item) {
+						$post_item->post_id 				= $post_item->ID;
+						$post_item->blog_id					= $post_item->BLOG_ID;
+						$post_item->post_author_id 			= $post_item->post_author;
+						$post_item->post_permalink 			= network_get_permalink( $post_item->BLOG_ID, $post_item->ID);
+						$post_item->post_published_stamp	= strtotime($post_item->post_date_gmt);
+						
+
+						$post_ids[] = $post_item->post_id;			
+						$all_items[$post_item->post_published_stamp] = $post_item;
+					}
 				}
 			}
 		}
@@ -1009,7 +1071,6 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 
 					$item->post_type 			= 	"comment";
 					$item->blog_id				=	$wpdb->blogid; 
-					$item->site_id				=	$wpdb->siteid;
 					$item->post_title 			=	get_the_title($item->post_id);
 					$item->post_permalink		=	get_permalink($item->post_id);
 					$item->post_published_stamp	= strtotime($item->post_published_stamp);
@@ -1017,19 +1078,38 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				}
 			}
 		} else {
-			$select_query_str = "SELECT 
-				c.blog_id as blog_id, 
-				c.site_id as site_id, 
-				c.comment_post_id as post_id, 
-				c.comment_author_user_id as post_author_id, 
-				c.comment_author as post_author_name, 
-				c.comment_author_email as post_author_email, 
-				p.post_title as post_title, 
-				c.comment_post_permalink as post_permalink, 
-				c.comment_date_stamp as post_published_stamp, 
-				c.comment_id as comment_id 
-				FROM ". $wpdb->base_prefix . "site_comments c INNER JOIN ". $wpdb->base_prefix . "site_posts p ON c.comment_post_id=p.post_id"; 
+			if ($post_indexer_plugin === 2) {
+			
+				$select_query_str = "SELECT 
+					c.blog_id as blog_id, 
+					c.comment_post_id as post_id, 
+					c.comment_author_user_id as post_author_id, 
+					c.comment_author as post_author_name, 
+					c.comment_author_email as post_author_email, 
+					p.post_title as post_title, 
+					c.comment_post_permalink as post_permalink, 
+					c.comment_date_stamp as post_published_stamp, 
+					c.comment_id as comment_id 
+					FROM ". $wpdb->base_prefix . "site_comments c INNER JOIN ". $wpdb->base_prefix . "site_posts p ON c.comment_post_id=p.post_id"; 
 					
+			} else if (($post_indexer_plugin === 3) && (class_exists('postindexermodel'))) {
+				
+				$model = new postindexermodel();
+				
+				$select_query_str = "SELECT 
+					c.blog_id as blog_id, 
+					c.comment_post_id as post_id, 
+					c.comment_author_user_id as post_author_id, 
+					c.comment_author as post_author_name, 
+					c.comment_author_email as post_author_email, 
+					p.post_title as post_title, 
+					c.comment_post_permalink as post_permalink, 
+					c.comment_date_stamp as post_published_stamp, 
+					c.comment_id as comment_id 
+					FROM ". $wpdb->base_prefix . "site_comments c INNER JOIN ". 
+					$model->network_posts . " p ON c.comment_post_id=p.ID";				
+			}
+			
 			$where_query_str = 'WHERE 1 ';
 			$where_query_str .= " AND c.comment_approved = 1 ";
 
@@ -1037,20 +1117,21 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				$where_query_str .= " AND p.post_published_stamp > ". $instance['timekey'];		
 			}
 
-			if (($instance['show_users_content'] == "network") && (isset($user_ids)) && (count($user_ids))) 
+			if (($instance['show_users_content'] == "site") && (isset($user_ids)) && (count($user_ids))) 
 				$where_query_str .= " AND c.comment_author_user_id IN (". implode(',', $user_ids) .") ";
-			
+		
 			if ($instance['show_users_content'] == "local")
 				$where_query_str .= " AND c.blog_id=". $wpdb->blogid ." ";
 
 			if ( (isset($terms_query_str)) && (strlen($terms_query_str)) ) {
 				$where_query_str .= " AND (". $terms_query_str .") ";
 			}
-		
+	
 			$orderby_query_str = ' ORDER BY c.comment_date_stamp DESC';
 			$limit_query_str = " LIMIT ". $instance['items_number'];
-		
+	
 			$query_str = $select_query_str ." ". $where_query_str ." ". $orderby_query_str ." ". $limit_query_str;
+
 			//echo "query_str=[". $query_str ."]<br />";
 			$comment_items = $wpdb->get_results($query_str);
 
@@ -1066,7 +1147,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	if (($all_items) && (count($all_items)))
 		krsort($all_items);
-	
+		
 	if ( (isset($instance['show_live'])) && ($instance['show_live'] == "live") ) {	
 		// If we are showing 'live' content (AJAX) polling we set the transient timeout low. 
 		set_transient( 'live_stream_widget_content_item_'. $widget_id, $all_items, intval($instance['interval_seconds'])+1 );
@@ -1075,6 +1156,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 		set_transient( 'live_stream_widget_content_item_'. $widget_id, $all_items, 30 );
 	}
 	
+	//echo "all_items<pre>"; print_r($all_items); echo "</pre>";	
 	return $all_items;	
 }
 
@@ -1118,7 +1200,8 @@ function live_stream_build_display($instance, $items, $echo = true) {
 	$items_output = '';
 	
 	$blogs = array();
-		
+	
+	echo "instance<pre>"; print_r($instance); echo "</pre>";	
 	foreach($items as $key => $item) {
 
 		if (isset($_POST['timekey'])) {
@@ -1202,8 +1285,12 @@ function live_stream_build_display($instance, $items, $echo = true) {
 		}
 		
 		/* User Avatar */
-		if ((isset($instance['show_avatar'])) && ($instance['show_avatar'] == "on") 
-		 && (isset($user_data['user_email'])) && (strlen($user_data['user_email']))  ) {
+		if ((isset($instance['show_avatar'])) && ($instance['show_avatar'] == "on")) {
+			if ((isset($user_data['user_email'])) && (strlen($user_data['user_email']))) {
+				$avatar = get_avatar($user_data['user_email'], 30, null, $user_data['display_name']);
+			} else {
+				$avatar = get_avatar("dummy@dummy.com", 30, null, $user_data['display_name']);				
+			}
 			$avatar = get_avatar($user_data['user_email'], 30, null, $user_data['display_name']);
 			if (!empty($avatar)) {
 				$item_output .= '<div class="live-stream-avatar avatar-'. $user_data['user_email'] .'">';
@@ -1212,7 +1299,7 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			}
 		}
 		
-		/* Begine text container wrapper */
+		/* Begin text container wrapper */
 		$item_output .= '<div class="live-stream-text">';
 
 
@@ -1262,7 +1349,25 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			//$item_output .= $item->post_published_stamp ." ". date('Y-m-d H:i:s', $item->post_published_stamp);			
 			//$item_output .= ' &middot; ';			
 			
-			$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'">'. __('visit', LIVE_STREAM_I18N_DOMAIN) .'</a>';
+			if ($item->post_type == "comment") {
+				if ($instance['show_users_content'] == "local") {
+					$comment_count = get_comments_number( $item->post_id );
+					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN) ." (". $comment_count .")";
+				} else {
+					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN);					
+				}
+				$item_output .= '<a class="live-stream-text-footer-date" href="'. 
+					$item->post_permalink .'#comment-'. $item->comment_id .'">'. $comment_label .'</a>';
+			} else {
+				if (($instance['show_users_content'] == "local") && (array_search("post", $instance['content_types']) !== false)) {
+					$comment_count = get_comments_number( $item->post_id );
+					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN) ." (". $comment_count .")";
+					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'#comment">'. $comment_label .'</a>';
+					
+				} else {
+					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'">'. __('visit', LIVE_STREAM_I18N_DOMAIN) .'</a>';					
+				}
+			}
 			$item_output .= '</div>';
 
 
