@@ -7,6 +7,11 @@ Change Log:
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
+1.0.3.1 - 2012/11/13
+----------------------------------------------------------------------
+- More change for Post Indexer 3 Network Query logic
+- Other tweaks to widget output for linking to comments listing
+
 1.0.3 - 2012/11/07
 ----------------------------------------------------------------------
 - Added logic to support Post Indexer 3 Network_Query object instead of direct database calls.

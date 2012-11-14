@@ -4,7 +4,7 @@ Plugin Name: Live Stream Widget
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
 Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: Paul Menard (Incsub)
-Version: 1.0.3
+Version: 1.0.3.1
 Author URI: http://premium.wpmudev.org/
 WDP ID: 679182
 Text Domain: live-stream-widget
@@ -31,7 +31,7 @@ if (!defined('LIVE_STREAM_I18N_DOMAIN'))
 	define('LIVE_STREAM_I18N_DOMAIN', 'live-stream-widget');
 
 if (!defined('LIVE_STREAM_VERSION'))
-	define('LIVE_STREAM_VERSION', '1.0.2');
+	define('LIVE_STREAM_VERSION', '1.0.3.1');
 
 
 add_action( 'init', 'live_stream_init_proc' );
@@ -724,6 +724,7 @@ function get_instance_user_content($instance) {
  */
 
 function has_post_indexer_plugin() {
+	global $post_indexer_current_version;
 	
 	if ((isset($post_indexer_current_version)) && (!empty($post_indexer_current_version))) {
 		return 2;
@@ -1003,6 +1004,10 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 					'order'				=>	'DESC'
 				);
 
+				if ($instance['show_users_content'] == "local") {
+					$post_query_args['blog_id'] = $wpdb->blogid;
+				}
+
 				if ((isset($tax_query)) && (count($tax_query))) {
 					$tax_query['relation'] = 'OR';
 					$post_query_args['tax_query'] = $tax_query;
@@ -1017,7 +1022,8 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				$current_error_reporting = error_reporting();
 				error_reporting(0);
 				$post_query = new Network_Query($post_query_args);
-
+				error_reporting($current_error_reporting);
+				
 				if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
 					remove_filter( 'posts_where', 'live_stream_filter_posts_timekey_where' );
 				}
@@ -1346,23 +1352,23 @@ function live_stream_build_display($instance, $items, $echo = true) {
 				human_time_diff( $item->post_published_stamp ) ) .'</span>';
 			$item_output .= ' &middot; ';
 			
-			//$item_output .= $item->post_published_stamp ." ". date('Y-m-d H:i:s', $item->post_published_stamp);			
-			//$item_output .= ' &middot; ';			
-			
 			if ($item->post_type == "comment") {
 				if ($instance['show_users_content'] == "local") {
 					$comment_count = get_comments_number( $item->post_id );
 					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN) ." (". $comment_count .")";
+
+					$item_output .= '<a class="live-stream-text-footer-date" href="'. 
+						$item->post_permalink .'#comments">'. $comment_label .'</a>';
 				} else {
-					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN);					
+					$comment_label = __('comments', LIVE_STREAM_I18N_DOMAIN);					
+					$item_output .= '<a class="live-stream-text-footer-date" href="'. 
+						$item->post_permalink .'#comments">'. $comment_label .'</a>';
 				}
-				$item_output .= '<a class="live-stream-text-footer-date" href="'. 
-					$item->post_permalink .'#comment-'. $item->comment_id .'">'. $comment_label .'</a>';
 			} else {
 				if (($instance['show_users_content'] == "local") && (array_search("post", $instance['content_types']) !== false)) {
 					$comment_count = get_comments_number( $item->post_id );
 					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN) ." (". $comment_count .")";
-					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'#comment">'. $comment_label .'</a>';
+					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'#comments">'. $comment_label .'</a>';
 					
 				} else {
 					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'">'. __('visit', LIVE_STREAM_I18N_DOMAIN) .'</a>';					
