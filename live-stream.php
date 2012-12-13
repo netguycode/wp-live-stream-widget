@@ -4,7 +4,7 @@ Plugin Name: Live Stream Widget
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
 Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: Paul Menard (Incsub)
-Version: 1.0.3.1
+Version: 1.0.4
 Author URI: http://premium.wpmudev.org/
 WDP ID: 679182
 Text Domain: live-stream-widget
@@ -27,11 +27,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 ///////////////////////////////////////////////////////////////////////////
 
-if (!defined('LIVE_STREAM_I18N_DOMAIN'))
-	define('LIVE_STREAM_I18N_DOMAIN', 'live-stream-widget');
-
 if (!defined('LIVE_STREAM_VERSION'))
-	define('LIVE_STREAM_VERSION', '1.0.3.1');
+	define('LIVE_STREAM_VERSION', '1.0.4');
 
 
 add_action( 'init', 'live_stream_init_proc' );
@@ -47,7 +44,7 @@ include_once( dirname(__FILE__) . '/lib/dash-notices/wpmudev-dash-notification.p
 function live_stream_init_proc() {
 	
 	/* Setup the tetdomain for i18n language handling see http://codex.wordpress.org/Function_Reference/load_plugin_textdomain */
-    load_plugin_textdomain( LIVE_STREAM_I18N_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+    load_plugin_textdomain( 'live-stream-widget', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
 
 function live_stream_widgets_init_proc() {
@@ -118,14 +115,14 @@ class LiveStreamWidget extends WP_Widget {
  		/* Widget settings. */
  		$widget_ops = array( 
 			'classname' => 'live-stream-widget', 
-			'description' => __('Show Posts and Comments in a Twitter-like updating widget', LIVE_STREAM_I18N_DOMAIN),
+			'description' => __('Show Posts and Comments in a Twitter-like updating widget', 'live-stream-widget'),
 			'classname' => 'live-stream-widget-admin' );
 
  		/* Widget control settings. */
  		$control_ops = array( 'width' => 350, 'height' => 350, 'id_base' => 'live-stream-widget' );
 
  		/* Create the widget. */
- 		$this->WP_Widget( 'live-stream-widget', __('Live Stream', LIVE_STREAM_I18N_DOMAIN), $widget_ops, $control_ops );
+ 		$this->WP_Widget( 'live-stream-widget', __('Live Stream', 'live-stream-widget'), $widget_ops, $control_ops );
 	}
 
 	/**
@@ -195,7 +192,8 @@ class LiveStreamWidget extends WP_Widget {
 			jQuery(document).ready( function($) {
 
 				<?php if ((isset($instance['show_live'])) && ($instance['show_live'] == "live")) { ?>
-					jQuery.LiveStreamUpdates('#live-stream-widget-<?php echo $this->number; ?>', {'widget_id': <?php echo $this->number; ?>, 'delay': <?php echo $timer_interval; ?>, max_items: <?php echo $max_items; ?>});
+					jQuery.LiveStreamUpdates('#live-stream-widget-<?php echo $this->number; ?>', {'widget_id': <?php 
+						echo $this->number; ?>, 'delay': <?php echo $timer_interval; ?>, max_items: <?php echo $max_items; ?>});
 				<?php } else { ?>
 					var live_stream_widget_<?php echo $this->number; ?>_function = function() {
 						var update_selector = '#live-stream-widget-<?php echo $this->number; ?> .live-stream-items-wrapper';
@@ -297,6 +295,9 @@ class LiveStreamWidget extends WP_Widget {
 		if (isset($new_instance['items_number']))
 			$instance['items_number']	= $new_instance['items_number'];
 
+		if (isset($new_instance['content_chars']))
+			$instance['content_chars']	= $new_instance['content_chars'];
+
 		if ((isset($new_instance['show_y_scroll'])) && ($new_instance['show_y_scroll'] == "on"))
 			$instance['show_y_scroll']	= $new_instance['show_y_scroll'];
 		else
@@ -326,6 +327,7 @@ class LiveStreamWidget extends WP_Widget {
 			'height'				=>	'200px',
 			'height_other'			=>	'',
 			'items_number'			=>	'25',
+			'content_chars'			=>	'0',
 			'show_y_scroll'			=>	'',
 			'show_live'				=>	'loop',
 			'interval_seconds'		=>	3,
@@ -342,6 +344,7 @@ class LiveStreamWidget extends WP_Widget {
 		$this->show_widget_admin_live_scroll($instance);
 		$this->show_widget_admin_height_option($instance);
 		$this->show_widget_admin_content_item_count($instance);
+		$this->show_widget_admin_content_char_count($instance);
 		$this->show_widget_admin_interval_seconds($instance);
 		$this->show_widget_admin_avatars($instance);
 		$this->show_widget_admin_scrollbars($instance);
@@ -350,7 +353,7 @@ class LiveStreamWidget extends WP_Widget {
 	
 	function show_widget_admin_title($instance) {
 		?>
-		<p><label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e('Widget Title:', LIVE_STREAM_I18N_DOMAIN); ?></label>
+		<p><label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e('Widget Title:', 'live-stream-widget'); ?></label>
 			<input id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" 
 				value="<?php echo $instance['title']; ?>" class="widefat" type="text" />
 		</p>
@@ -361,7 +364,7 @@ class LiveStreamWidget extends WP_Widget {
 		?>
 		<p><input class="checkbox" type="checkbox" <?php checked( $instance['show_avatar'], 'on' ); ?> 
 				id="<?php echo $this->get_field_id( 'show_avatar' ); ?>" name="<?php echo $this->get_field_name( 'show_avatar' ); ?>" /> 
-			<label for="<?php echo $this->get_field_id( 'show_avatar' ); ?>"><?php _e('Show Author Avatar?', LIVE_STREAM_I18N_DOMAIN); ?></label>
+			<label for="<?php echo $this->get_field_id( 'show_avatar' ); ?>"><?php _e('Show Author Avatar?', 'live-stream-widget'); ?></label>
 		</p>
 		<?php
 	}
@@ -369,10 +372,21 @@ class LiveStreamWidget extends WP_Widget {
 	function show_widget_admin_content_item_count($instance) {
 		?>
 		<p><label for="<?php echo $this->get_field_id( 'items_number' ); ?>"><?php 
-				_e('Maximum items to show.', LIVE_STREAM_I18N_DOMAIN); ?></label>
+				_e('Maximum items to show.', 'live-stream-widget'); ?></label>
 			<input type="text" name="<?php echo $this->get_field_name( 'items_number' ); ?>" 
 				id="<?php echo $this->get_field_id( 'items_number' ); ?>" 
 				value="<?php echo $instance['items_number']; ?>" class="widefat" />
+		</p>
+		<?php
+	}
+
+	function show_widget_admin_content_char_count($instance) {
+		?>
+		<p><label for="<?php echo $this->get_field_id( 'content_chars' ); ?>"><?php 
+				_e('Show chars from item content. 0 for none. Will append ... after', 'live-stream-widget'); ?></label>
+			<input type="text" name="<?php echo $this->get_field_name( 'content_chars' ); ?>" 
+				id="<?php echo $this->get_field_id( 'content_chars' ); ?>" 
+				value="<?php echo $instance['content_chars']; ?>" class="widefat" />
 		</p>
 		<?php
 	}
@@ -384,14 +398,14 @@ class LiveStreamWidget extends WP_Widget {
 		} else {
 			?>
 			<p><label for="<?php echo $this->get_field_id( 'show_live' ); ?>"><?php 
-					_e('Content Loading', LIVE_STREAM_I18N_DOMAIN); ?></label>
+					_e('Content Loading', 'live-stream-widget'); ?></label>
 			
 				<select id="<?php echo $this->get_field_id( 'show_live' ); ?>" 
 					name="<?php echo $this->get_field_name( 'show_live'); ?>" class="widefat" style="width:100%;">
 					<option value="loop" <?php if ($instance['show_live'] == "loop") { echo ' selected="selected" '; }?>><?php 
-						_e('Looping - Continuous Scroll. No new content.', LIVE_STREAM_I18N_DOMAIN); ?></option>
+						_e('Looping - Continuous Scroll. No new content.', 'live-stream-widget'); ?></option>
 					<option value="live" <?php if ($instance['show_live'] == "live") { echo ' selected="selected" '; }?>><?php 
-						_e('Live - Load new content via AJAX. No scrolling.', LIVE_STREAM_I18N_DOMAIN); ?></option>
+						_e('Live - Load new content via AJAX. No scrolling.', 'live-stream-widget'); ?></option>
 				</select>
 			</p>
 			<?php
@@ -402,7 +416,7 @@ class LiveStreamWidget extends WP_Widget {
 		?>
 		<p><input class="checkbox" type="checkbox" <?php checked( $instance['show_y_scroll'], 'on' ); ?> 
 				id="<?php echo $this->get_field_id( 'show_y_scroll' ); ?>" name="<?php echo $this->get_field_name( 'show_y_scroll' ); ?>" /> 
-			<label for="<?php echo $this->get_field_id( 'show_y_scroll' ); ?>"><?php _e('Show Vertical Scrollbar?', LIVE_STREAM_I18N_DOMAIN); ?></label>
+			<label for="<?php echo $this->get_field_id( 'show_y_scroll' ); ?>"><?php _e('Show Vertical Scrollbar?', 'live-stream-widget'); ?></label>
 		</p>
 		<?php
 	}
@@ -410,7 +424,7 @@ class LiveStreamWidget extends WP_Widget {
 	function show_widget_admin_interval_seconds($instance) {
 		?>
 		<p><label for="<?php echo $this->get_field_id( 'interval_seconds' ); ?>"><?php 
-				_e('Number of second delay for scrolling/polling', LIVE_STREAM_I18N_DOMAIN); ?></label>
+				_e('Number of second delay for scrolling/polling', 'live-stream-widget'); ?></label>
 			<input type="text" name="<?php echo $this->get_field_name( 'interval_seconds' ); ?>" 
 				id="<?php echo $this->get_field_id( 'interval_seconds' ); ?>" 
 				value="<?php echo $instance['interval_seconds']; ?>" class="widefat" />
@@ -421,23 +435,23 @@ class LiveStreamWidget extends WP_Widget {
 	function show_widget_admin_height_option($instance) {
 		?>
 		<p><label for="<?php echo $this->get_field_id( 'height' ); ?>"><?php 
-				_e('Widget Height', LIVE_STREAM_I18N_DOMAIN); ?></label>
+				_e('Widget Height', 'live-stream-widget'); ?></label>
 			
 			<select id="<?php echo $this->get_field_id( 'height' ); ?>" 
 				name="<?php echo $this->get_field_name( 'height'); ?>" class="widefat" style="width:100%;">
 				<option value="200px" <?php if ($instance['height'] == "200px") { echo ' selected="selected" '; }?>><?php 
-					_e('200px - approx. 2-3 items', LIVE_STREAM_I18N_DOMAIN); ?></option>
+					_e('200px - approx. 2-3 items', 'live-stream-widget'); ?></option>
 				<option value="350px" <?php if ($instance['height'] == "350px") { echo ' selected="selected" '; }?>><?php 
-					_e('350px - approx. 4-5 items', LIVE_STREAM_I18N_DOMAIN); ?></option>
+					_e('350px - approx. 4-5 items', 'live-stream-widget'); ?></option>
 				<option value="500px" <?php if ($instance['height'] == "500px") { echo ' selected="selected" '; }?>><?php 
-					_e('500px - approx. 6-8 items', LIVE_STREAM_I18N_DOMAIN); ?></option>
+					_e('500px - approx. 6-8 items', 'live-stream-widget'); ?></option>
 				<option value="other" <?php if ($instance['height'] == "other") { echo ' selected="selected" '; }?>><?php 
-						_e('other - provide your own height', LIVE_STREAM_I18N_DOMAIN); ?></option>
+						_e('other - provide your own height', 'live-stream-widget'); ?></option>
 			</select>
 			<div id="<?php echo $this->get_field_id( 'height_other' ); ?>-wrapper" 
 				<?php if ($instance['height'] != "other") { echo ' style="display:none;" '; } ?> >
 				<label for="<?php echo $this->get_field_id( 'height_other' ); ?>"><?php 
-					_e('Specify Widget Height: <em>include px, em, etc. qualifies i.e. 300px</em>', LIVE_STREAM_I18N_DOMAIN); ?></label>
+					_e('Specify Widget Height: <em>include px, em, etc. qualifies i.e. 300px</em>', 'live-stream-widget'); ?></label>
 				<input id="<?php echo $this->get_field_id( 'height_other' ); ?>" name="<?php echo $this->get_field_name( 'height_other' ); ?>" 
 					value="<?php echo $instance['height_other']; ?>" style="width:97%;" />
 			</div>
@@ -461,9 +475,9 @@ class LiveStreamWidget extends WP_Widget {
 		
 		if ( (has_comment_indexer_plugin()) && (has_post_indexer_plugin()) ) { 
 			$source_content_array = array(
-				'local'	=>	__('Local - Content from only this site.', LIVE_STREAM_I18N_DOMAIN),
-				'site'	=>	__('Site - Content from all sites created by users from this site.', LIVE_STREAM_I18N_DOMAIN),
-				'all'	=>	__('All - Content by all users from all sites', LIVE_STREAM_I18N_DOMAIN)
+				'local'	=>	__('Local - Content from only this site.', 'live-stream-widget'),
+				'site'	=>	__('Site - Content from all sites created by users from this site.', 'live-stream-widget'),
+				'all'	=>	__('All - Content by all users from all sites', 'live-stream-widget')
 			);
 			
 			if ( (function_exists('is_edublogs')) && (is_edublogs()) ) { 
@@ -471,7 +485,7 @@ class LiveStreamWidget extends WP_Widget {
 			}
 			
 			?>
-			<p><label><?php _e('What content to show', LIVE_STREAM_I18N_DOMAIN);?>:<br />
+			<p><label><?php _e('What content to show', 'live-stream-widget');?>:<br />
 			<select id="<?php echo $this->get_field_id( 'show_users_content' ); ?>" 
 				name="<?php echo $this->get_field_name( 'show_users_content'); ?>" class="widefat" style="width:100%;">
 				<?php
@@ -494,12 +508,12 @@ class LiveStreamWidget extends WP_Widget {
 			?>
 			<p>
 				<label for="<?php echo $this->get_field_id( 'content_types' ); ?>"><?php 
-					 _e('Content Types:', LIVE_STREAM_I18N_DOMAIN);  ?></label> 
+					 _e('Content Types:', 'live-stream-widget');  ?></label> 
 				<select id="<?php echo $this->get_field_id( 'content_types' ); ?>" 
 					class="widget-live-stream-content-types" size="1"
 					name="<?php echo $this->get_field_name( 'content_types' ); ?>[]" class="widefat">
 					<option value="" <?php if (!count($instance['content_types'])) { echo ' selected="selected" '; } ?>><?php 
-						_e('All Types', LIVE_STREAM_I18N_DOMAIN); ?></option>
+						_e('All Types', 'live-stream-widget'); ?></option>
 					<?php
 						foreach($content_types as $content_type) {
 							?><option value="<?php echo $content_type; ?>" <?php 
@@ -562,7 +576,7 @@ class LiveStreamWidget extends WP_Widget {
 						
 					<div id="<?php echo $this->get_field_id( 'content_terms' ); ?>-<?php echo $tax_slug; ?>-wrapper" <?php 
 					if (isset($instance['content_terms']['_select_all_'][$tax_slug])) { echo ' style="display:none" '; } ?>>
-						<p><a class="live-stream-terms-show" href="#" class=""><?php _e('Selected terms', LIVE_STREAM_I18N_DOMAIN); ?></a>: <span
+						<p><a class="live-stream-terms-show" href="#" class=""><?php _e('Selected terms', 'live-stream-widget'); ?></a>: <span
 							 class="selected-terms"><?php 
 							if (count($selected_term_names)) {
 								echo implode(', ', $selected_term_names); 
@@ -822,10 +836,12 @@ function live_stream_get_site_user_ids($instance, $widget_id) {
 function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	global $wpdb;
-
-//	if ( $all_items = get_transient( 'live_stream_widget_content_item_'. $widget_id ) ) {
-//		return $all_items;
-//	}
+	
+//	echo "instance<pre>"; print_r($instance); echo "</pre>";
+	
+	if ( $all_items = get_transient( 'live_stream_widget_content_item_'. $widget_id ) ) {
+		return $all_items;
+	}
 		
 	$post_items 	= array();
 	$comment_items 	= array();
@@ -852,7 +868,9 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	if ($instance['show_users_content'] == "site")
 		$user_ids = live_stream_get_site_user_ids($instance, $widget_id);
 	
-	$post_indexer_plugin 	= has_post_indexer_plugin();			
+	$post_indexer_plugin 	= has_post_indexer_plugin();	
+	if ((!$post_indexer_plugin) && ($content_source != "local"))
+		$content_source = 'local';
 	
 	$tax_terms_query_str = '';
 	if ( (isset($instance['content_terms'])) && (count($instance['content_terms'])) ) {
@@ -945,6 +963,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 					p.post_author as post_author_id, 
 					p.post_type as post_type, 
 					p.post_title as post_title, 
+					p.post_content as post_content,
 					p.post_permalink as post_permalink, 
 					p.post_published_stamp as post_published_stamp 
 					FROM ". $wpdb->base_prefix . "site_posts p";		
@@ -1027,15 +1046,17 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
 					remove_filter( 'posts_where', 'live_stream_filter_posts_timekey_where' );
 				}
-
+				//echo "posts<pre>"; print_r($post_query->posts); echo "</pre>";
+				//die();
 				if (($post_query->posts) && (count($post_query->posts))) {
 					foreach($post_query->posts as $post_item) {
 						$post_item->post_id 				= $post_item->ID;
-						$post_item->blog_id					= $post_item->BLOG_ID;
+						$post_item->blog_id					= $post_item->BLOG_ID;						
 						$post_item->post_author_id 			= $post_item->post_author;
 						$post_item->post_permalink 			= network_get_permalink( $post_item->BLOG_ID, $post_item->ID);
 						$post_item->post_published_stamp	= strtotime($post_item->post_date_gmt);
-						
+						if (strlen($post_item->post_excerpt))
+							$post->post_content = $post_item->post_excerpt;
 
 						$post_ids[] = $post_item->post_id;			
 						$all_items[$post_item->post_published_stamp] = $post_item;
@@ -1052,6 +1073,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 			$select_query_str = "SELECT 
 				c.comment_post_ID as post_id, 
 				c.user_id as post_author_id, 
+				c.comment_content as comment_content,				
 				c.comment_author as post_author_name, 
 				c.comment_author_email as post_author_email, 
 				c.comment_date_gmt as post_published_stamp, 
@@ -1093,10 +1115,12 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 					c.comment_author as post_author_name, 
 					c.comment_author_email as post_author_email, 
 					p.post_title as post_title, 
+					c.comment_content as comment_content,
 					c.comment_post_permalink as post_permalink, 
 					c.comment_date_stamp as post_published_stamp, 
 					c.comment_id as comment_id 
-					FROM ". $wpdb->base_prefix . "site_comments c INNER JOIN ". $wpdb->base_prefix . "site_posts p ON c.comment_post_id=p.post_id"; 
+					FROM ". $wpdb->base_prefix . "site_comments c INNER JOIN ". $wpdb->base_prefix . 
+						"site_posts p ON c.comment_post_id=p.post_id AND c.blog_id=p.blog_id "; 
 					
 			} else if (($post_indexer_plugin === 3) && (class_exists('postindexermodel'))) {
 				
@@ -1109,50 +1133,60 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 					c.comment_author as post_author_name, 
 					c.comment_author_email as post_author_email, 
 					p.post_title as post_title, 
+					c.comment_content as comment_content,					
 					c.comment_post_permalink as post_permalink, 
 					c.comment_date_stamp as post_published_stamp, 
 					c.comment_id as comment_id 
 					FROM ". $wpdb->base_prefix . "site_comments c INNER JOIN ". 
-					$model->network_posts . " p ON c.comment_post_id=p.ID";				
+					$model->network_posts . " p ON c.comment_post_id=p.ID AND c.blog_id=p.BLOG_ID ";
 			}
-			
-			$where_query_str = 'WHERE 1 ';
-			$where_query_str .= " AND c.comment_approved = 1 ";
+			if ((isset($select_query_str)) && (!empty($select_query_str))) {
+				
+				$where_query_str = 'WHERE 1 ';
+				$where_query_str .= " AND c.comment_approved = 1 ";
 
-			if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
-				$where_query_str .= " AND p.post_published_stamp > ". $instance['timekey'];		
-			}
-
-			if (($instance['show_users_content'] == "site") && (isset($user_ids)) && (count($user_ids))) 
-				$where_query_str .= " AND c.comment_author_user_id IN (". implode(',', $user_ids) .") ";
-		
-			if ($instance['show_users_content'] == "local")
-				$where_query_str .= " AND c.blog_id=". $wpdb->blogid ." ";
-
-			if ( (isset($terms_query_str)) && (strlen($terms_query_str)) ) {
-				$where_query_str .= " AND (". $terms_query_str .") ";
-			}
-	
-			$orderby_query_str = ' ORDER BY c.comment_date_stamp DESC';
-			$limit_query_str = " LIMIT ". $instance['items_number'];
-	
-			$query_str = $select_query_str ." ". $where_query_str ." ". $orderby_query_str ." ". $limit_query_str;
-
-			//echo "query_str=[". $query_str ."]<br />";
-			$comment_items = $wpdb->get_results($query_str);
-
-			if ($comment_items) {
-				foreach($comment_items as $item) {
-
-					$item->post_type 							= "comment";
-					$all_items[$item->post_published_stamp]		= $item;
+				if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
+					$where_query_str .= " AND p.post_published_stamp > ". $instance['timekey'];		
 				}
+
+				if (($instance['show_users_content'] == "site") && (isset($user_ids)) && (count($user_ids))) 
+					$where_query_str .= " AND c.comment_author_user_id IN (". implode(',', $user_ids) .") ";
+
+//				if ($instance['show_users_content'] == "local")
+//					$where_query_str .= " AND c.blog_id=". $wpdb->blogid ." ";
+//				else
+//					$where_query_str .= " AND c.blog_id = p.blog_id ";
+				
+				if ( (isset($terms_query_str)) && (strlen($terms_query_str)) ) {
+					$where_query_str .= " AND (". $terms_query_str .") ";
+				}
+
+				$orderby_query_str = ' ORDER BY c.comment_date_stamp DESC';
+				$limit_query_str = " LIMIT ". $instance['items_number'];
+
+				$query_str = $select_query_str ." ". $where_query_str ." ". $orderby_query_str ." ". $limit_query_str;
+
+//				echo "query_str=[". $query_str ."]<br />";
+				$comment_items = $wpdb->get_results($query_str);
+
+				if ($comment_items) {
+					foreach($comment_items as $item) {
+
+						$item->post_type 							= "comment";
+						$all_items[$item->post_published_stamp]		= $item;
+					}
+				}
+
 			}
 		}
 	}
 	
 	if (($all_items) && (count($all_items)))
 		krsort($all_items);
+	
+	if (count($all_items) > $instance['items_number']) {
+		$all_items = array_slice($all_items, 0, $instance['items_number']);
+	}
 		
 	if ( (isset($instance['show_live'])) && ($instance['show_live'] == "live") ) {	
 		// If we are showing 'live' content (AJAX) polling we set the transient timeout low. 
@@ -1201,6 +1235,9 @@ function live_stream_filter_posts_timekey_where( $where = '' ) {
 function live_stream_build_display($instance, $items, $echo = true) {
 	
 	if ( (!$items) || (!is_array($items)) || (!count($items)) ) return;
+//	echo "instance<pre>"; print_r($instance); echo "</pre>";
+//	echo "items<pre>"; print_r($items); echo "</pre>";
+//	die();
 	
 	krsort($items);
 	$items_output = '';
@@ -1313,12 +1350,32 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			if (isset($user_data['display_name'])) 
 				$item_output .= $author_anchor_begin . $user_data['display_name'] . $author_anchor_end ." ";
 
-			if ($item->post_type == "comment") {
-				$item_output .= __(" commented on ", LIVE_STREAM_I18N_DOMAIN); ;
+			$item_content = '';
+			if ((isset($instance['content_chars'])) && (intval($instance['content_chars']))) {
+				if ( ($item->post_type == "comment") && (isset($item->comment_content)) && (strlen($item->comment_content)) ) {
+					$item_content = strip_tags($item->comment_content);
+				} else if ((isset($item->post_content)) && (strlen($item->post_content))) {
+					$item_content = strip_tags($item->post_content);					
+				}
 				
+				if (strlen($item_content)) {
+					$item_content = substr($item_content, 0, $instance['content_chars']);
+					$item_content = '<span class="live-stream-item-content">'. $item_content .'...</span> ';
+				}
+			}
+
+			if ($item->post_type == "comment") {
+				$item_output .= ' <span class="live-stream-item-action">'. __("commented", 'live-stream-widget') .'</span>';
+				
+				if (strlen($item_content)) {
+					$item_output .= " ". $item_content;
+				}
+				
+				$item_output .= ' <span class="live-stream-item-action">'. __("on", 'live-stream-widget') .'</span> ';
+
 				/* Show the Post Title */
 				if (isset($blogs[$item->blog_id])) {
-					$post_anchor_begin 	= '<a href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
+					$post_anchor_begin 	= '<a class="live-stream-item-title" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
 					$post_anchor_end 	= '</a>';
 
 				} else {
@@ -1329,49 +1386,53 @@ function live_stream_build_display($instance, $items, $echo = true) {
 				$item_output .= $post_anchor_begin . $item->post_title . $post_anchor_end ." ";
 				
 			} else {
-				$item_output .= " ". __('published', LIVE_STREAM_I18N_DOMAIN) ." ";
+				$item_output .= ' <span class="live-stream-item-action">'. __('published', 'live-stream-widget') .'</span> ';
 
 				/* Show the Post Title */
-				$item_output .= '<a href="'. $item->post_permalink .'">'. $item->post_title ."</a> ";
+				$item_output .= '<a class="live-stream-item-title" href="'. $item->post_permalink .'">'. $item->post_title ."</a> ";
+				
+				if (strlen($item_content)) {
+					$item_output .= " ". $item_content;
+				}
 			}
-		
-		
+
+	
 			/* Show the Blog domain */
 			if ((isset($instance['show_users_content'])) && ($instance['show_users_content'] != "local")) {
 				if (isset($blog->siteurl)) {
-					$site_anchor_begin = '<a href="'. $blog->siteurl .'">';
+					$site_anchor_begin = '<a class="live-stream-item-blog" href="'. $blog->siteurl .'">';
 					$site_anchor_end	= '</a>';
-					$item_output .= "on ". $site_anchor_begin . $blog->blogname . $site_anchor_end ." ";
+					$item_output .= __("via", 'live-stream-widget') ." ". $site_anchor_begin . $blog->blogname . $site_anchor_end ." ";
 				}
 			}
 		
 		
 			/* Show the Post/Comment human time */
 			$item_output .= '<div class="live-stream-text-footer">';
-			$item_output .= '<span class="live-stream-text-footer-date">'. sprintf( __( '%s ago ', LIVE_STREAM_I18N_DOMAIN ), 
+			$item_output .= '<span class="live-stream-text-footer-date">'. sprintf( __( '%s ago ', 'live-stream-widget' ), 
 				human_time_diff( $item->post_published_stamp ) ) .'</span>';
 			$item_output .= ' &middot; ';
 			
 			if ($item->post_type == "comment") {
 				if ($instance['show_users_content'] == "local") {
 					$comment_count = get_comments_number( $item->post_id );
-					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN) ." (". $comment_count .")";
+					$comment_label = __('comment', 'live-stream-widget') ." (". $comment_count .")";
 
 					$item_output .= '<a class="live-stream-text-footer-date" href="'. 
 						$item->post_permalink .'#comments">'. $comment_label .'</a>';
 				} else {
-					$comment_label = __('comments', LIVE_STREAM_I18N_DOMAIN);					
+					$comment_label = __('comments', 'live-stream-widget');					
 					$item_output .= '<a class="live-stream-text-footer-date" href="'. 
 						$item->post_permalink .'#comments">'. $comment_label .'</a>';
 				}
 			} else {
 				if (($instance['show_users_content'] == "local") && (array_search("post", $instance['content_types']) !== false)) {
 					$comment_count = get_comments_number( $item->post_id );
-					$comment_label = __('comment', LIVE_STREAM_I18N_DOMAIN) ." (". $comment_count .")";
+					$comment_label = __('comment', 'live-stream-widget') ." (". $comment_count .")";
 					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'#comments">'. $comment_label .'</a>';
 					
 				} else {
-					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'">'. __('visit', LIVE_STREAM_I18N_DOMAIN) .'</a>';					
+					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'">'. __('visit', 'live-stream-widget') .'</a>';					
 				}
 			}
 			$item_output .= '</div>';

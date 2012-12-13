@@ -7,6 +7,11 @@ Change Log:
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
 
+1.0.4 - 2012/12/13
+----------------------------------------------------------------------
+- Corrected bug where comments were not filtered by blog-id http://premium.wpmudev.org/forums/topic/wrong-post-titles-shown-in-live-stream-widget
+- Added new option to show X number characters of the post/comment content 
+
 1.0.3.1 - 2012/11/13
 ----------------------------------------------------------------------
 - More change for Post Indexer 3 Network Query logic

@@ -54,3 +54,5 @@ ul.live-stream-controls li button {
 .live-stream-items-wrapper .live-stream-text-has-avatar .live-stream-text .live-stream-text-footer {
 	font-size: 11px;
 }
+
+.live-stream-items-wrapper .live-stream-item-content { font-style: italic; }
