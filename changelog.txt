@@ -6,6 +6,10 @@ Author: Paul Menard (incsub)
 Change Log:
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
+1.0.4.1 - 2013/01/07
+----------------------------------------------------------------------
+- Corrected sorting issue when merging multiple posts types
+- Added some CSS wrappers to better designate post type content list items and item elements
 
 1.0.4 - 2012/12/13
 ----------------------------------------------------------------------

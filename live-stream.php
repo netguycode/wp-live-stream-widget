@@ -4,7 +4,7 @@ Plugin Name: Live Stream Widget
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
 Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: Paul Menard (Incsub)
-Version: 1.0.4
+Version: 1.0.4.1
 Author URI: http://premium.wpmudev.org/
 WDP ID: 679182
 Text Domain: live-stream-widget
@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ///////////////////////////////////////////////////////////////////////////
 
 if (!defined('LIVE_STREAM_VERSION'))
-	define('LIVE_STREAM_VERSION', '1.0.4');
+	define('LIVE_STREAM_VERSION', '1.0.4.1');
 
 
 add_action( 'init', 'live_stream_init_proc' );
@@ -837,8 +837,6 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	global $wpdb;
 	
-//	echo "instance<pre>"; print_r($instance); echo "</pre>";
-	
 	if ( $all_items = get_transient( 'live_stream_widget_content_item_'. $widget_id ) ) {
 		return $all_items;
 	}
@@ -874,7 +872,6 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	$tax_terms_query_str = '';
 	if ( (isset($instance['content_terms'])) && (count($instance['content_terms'])) ) {
-		//echo "content_terms<pre>"; print_r($instance['content_terms']); echo "</pre>";
 
 		$tax_terms_array = array();
 		
@@ -912,7 +909,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 			}
 		}
 	}
-	
+
 	if ( (isset($instance['content_types'])) && (array_search('post', $instance['content_types']) !== false) ) {
 	
 		if ($content_source == "local") {
@@ -1004,7 +1001,6 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				$limit_query_str = " LIMIT ". $instance['items_number'];
 
 				$query_str = $select_query_str ." ". $where_query_str ." ". $orderby_query_str ." ". $limit_query_str;
-				//echo "query_str=[". $query_str ."]<br /><br />";
 				$post_items = $wpdb->get_results($query_str);
 				if ((isset($post_items)) && (count($post_items))) {
 					foreach($post_items as $item) {
@@ -1046,8 +1042,6 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
 					remove_filter( 'posts_where', 'live_stream_filter_posts_timekey_where' );
 				}
-				//echo "posts<pre>"; print_r($post_query->posts); echo "</pre>";
-				//die();
 				if (($post_query->posts) && (count($post_query->posts))) {
 					foreach($post_query->posts as $post_item) {
 						$post_item->post_id 				= $post_item->ID;
@@ -1101,7 +1095,8 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 					$item->blog_id				=	$wpdb->blogid; 
 					$item->post_title 			=	get_the_title($item->post_id);
 					$item->post_permalink		=	get_permalink($item->post_id);
-					$item->post_published_stamp	= strtotime($item->post_published_stamp);
+					$item->post_published_stamp	= 	strtotime($item->post_published_stamp);
+					
 					$all_items[$item->post_published_stamp]		= $item;
 				}
 			}
@@ -1165,10 +1160,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 				$limit_query_str = " LIMIT ". $instance['items_number'];
 
 				$query_str = $select_query_str ." ". $where_query_str ." ". $orderby_query_str ." ". $limit_query_str;
-
-//				echo "query_str=[". $query_str ."]<br />";
 				$comment_items = $wpdb->get_results($query_str);
-
 				if ($comment_items) {
 					foreach($comment_items as $item) {
 
@@ -1181,13 +1173,15 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 		}
 	}
 	
-	if (($all_items) && (count($all_items)))
+	if (($all_items) && (count($all_items))) {
+		ksort($all_items);
 		krsort($all_items);
+	}
 	
 	if (count($all_items) > $instance['items_number']) {
-		$all_items = array_slice($all_items, 0, $instance['items_number']);
+		$all_items = array_slice($all_items, 0, $instance['items_number'], true);
 	}
-		
+
 	if ( (isset($instance['show_live'])) && ($instance['show_live'] == "live") ) {	
 		// If we are showing 'live' content (AJAX) polling we set the transient timeout low. 
 		set_transient( 'live_stream_widget_content_item_'. $widget_id, $all_items, intval($instance['interval_seconds'])+1 );
@@ -1196,7 +1190,6 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 		set_transient( 'live_stream_widget_content_item_'. $widget_id, $all_items, 30 );
 	}
 	
-	//echo "all_items<pre>"; print_r($all_items); echo "</pre>";	
 	return $all_items;	
 }
 
@@ -1272,11 +1265,10 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			$blog->siteurl		= get_option( 'siteurl' );													
 		}
 		
+		$wrapper_class = "live-stream-item-". $item->post_type;
 		if ((isset($instance['show_avatar'])) && ($instance['show_avatar'] == "on")) {
 			$wrapper_class = " live-stream-text-has-avatar";
-		} else {
-			$wrapper_class = "";
-		}
+		} 
 
 		$item_output = '<li id="live-stream-item-'. $key .'" class="live-stream-item '. $wrapper_class .'">';
 		
@@ -1313,13 +1305,13 @@ function live_stream_build_display($instance, $items, $echo = true) {
 		
 		/* Build an anchor wrapper for the author which is used in multiple places */
 		if ((isset($blog->siteurl)) && (intval($item->post_author_id) )) {
-			$author_anchor_begin 	= '<a href="'. $blog->siteurl .'?author='
+			$author_anchor_begin 	= '<a class="live-stream-item-author" href="'. $blog->siteurl .'?author='
 				. $item->post_author_id .'">';
 			$author_anchor_end 		= '</a>';
 			
 		} else {
 			if ($item->post_type == "comment") {
-				$author_anchor_begin 	= '<a href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
+				$author_anchor_begin 	= '<a class="live-stream-item-author" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
 				$author_anchor_end 		= '</a>';
 			} else {			
 				$author_anchor_begin 	= '';
@@ -1336,7 +1328,7 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			}
 			$avatar = get_avatar($user_data['user_email'], 30, null, $user_data['display_name']);
 			if (!empty($avatar)) {
-				$item_output .= '<div class="live-stream-avatar avatar-'. $user_data['user_email'] .'">';
+				$item_output .= '<div class="live-stream-avatar">';
 				$item_output .= $author_anchor_begin . $avatar . $author_anchor_end;
 				$item_output .= '</div>';	
 			}
@@ -1365,16 +1357,13 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			}
 
 			if ($item->post_type == "comment") {
-				$item_output .= ' <span class="live-stream-item-action">'. __("commented", 'live-stream-widget') .'</span>';
-				
-				if (strlen($item_content)) {
-					$item_output .= " ". $item_content;
-				}
-				
-				$item_output .= ' <span class="live-stream-item-action">'. __("on", 'live-stream-widget') .'</span> ';
+				if (strlen($item_content)) $item_output .= " ". $item_content;
 
+				$item_output .= ' <span class="live-stream-item-action">'. __("commented on", 'live-stream-widget') .'</span> ';
+				
 				/* Show the Post Title */
 				if (isset($blogs[$item->blog_id])) {
+					if (strlen($item_content)) $item_output .= " ". $item_content;
 					$post_anchor_begin 	= '<a class="live-stream-item-title" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
 					$post_anchor_end 	= '</a>';
 
@@ -1386,14 +1375,15 @@ function live_stream_build_display($instance, $items, $echo = true) {
 				$item_output .= $post_anchor_begin . $item->post_title . $post_anchor_end ." ";
 				
 			} else {
+				if (strlen($item_content)) $item_output .= " ". $item_content;
+				
 				$item_output .= ' <span class="live-stream-item-action">'. __('published', 'live-stream-widget') .'</span> ';
 
 				/* Show the Post Title */
+				if (strlen($item_content)) $item_output .= " ". $item_content;
 				$item_output .= '<a class="live-stream-item-title" href="'. $item->post_permalink .'">'. $item->post_title ."</a> ";
 				
-				if (strlen($item_content)) {
-					$item_output .= " ". $item_content;
-				}
+				if (strlen($item_content)) $item_output .= " ". $item_content;
 			}
 
 	
@@ -1485,7 +1475,7 @@ function live_stream_update_ajax_proc() {
 			
 			$items = live_stream_get_post_items($instance);
 			if (($items) && (count($items))) {
-				ksort($items);					
+				//ksort($items);					
 
 				// We only want to update a single row per a request. Don't want to overwhelm the user. 
 				$items = array_slice($items, 0, 1, true);
