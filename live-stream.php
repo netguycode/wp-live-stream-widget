@@ -4,7 +4,7 @@ Plugin Name: Live Stream Widget
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
 Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: Paul Menard (Incsub)
-Version: 1.0.4.1
+Version: 1.0.4.2
 Author URI: http://premium.wpmudev.org/
 WDP ID: 679182
 Text Domain: live-stream-widget
@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ///////////////////////////////////////////////////////////////////////////
 
 if (!defined('LIVE_STREAM_VERSION'))
-	define('LIVE_STREAM_VERSION', '1.0.4.1');
+	define('LIVE_STREAM_VERSION', '1.0.4.2');
 
 
 add_action( 'init', 'live_stream_init_proc' );
@@ -1357,13 +1357,15 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			}
 
 			if ($item->post_type == "comment") {
-				if (strlen($item_content)) $item_output .= " ". $item_content;
+				if (strlen($item_output)) 
+					$item_output .= " ";
+				$item_output .= $item_content;
 
 				$item_output .= ' <span class="live-stream-item-action">'. __("commented on", 'live-stream-widget') .'</span> ';
 				
 				/* Show the Post Title */
 				if (isset($blogs[$item->blog_id])) {
-					if (strlen($item_content)) $item_output .= " ". $item_content;
+					if (strlen($item_output)) $item_output .= " "; ;
 					$post_anchor_begin 	= '<a class="live-stream-item-title" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
 					$post_anchor_end 	= '</a>';
 
@@ -1375,15 +1377,17 @@ function live_stream_build_display($instance, $items, $echo = true) {
 				$item_output .= $post_anchor_begin . $item->post_title . $post_anchor_end ." ";
 				
 			} else {
-				if (strlen($item_content)) $item_output .= " ". $item_content;
+				if (strlen($item_output)) 
+					$item_output .= " "; 
+				$item_output .= $item_content;
 				
 				$item_output .= ' <span class="live-stream-item-action">'. __('published', 'live-stream-widget') .'</span> ';
 
 				/* Show the Post Title */
-				if (strlen($item_content)) $item_output .= " ". $item_content;
+				if (strlen($item_output)) $item_output .= " ";
 				$item_output .= '<a class="live-stream-item-title" href="'. $item->post_permalink .'">'. $item->post_title ."</a> ";
 				
-				if (strlen($item_content)) $item_output .= " ". $item_content;
+				//if (strlen($item_content)) $item_output .= " ". $item_content;
 			}
 
 	
