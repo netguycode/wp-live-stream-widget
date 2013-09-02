@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ///////////////////////////////////////////////////////////////////////////
 
 if (!defined('LIVE_STREAM_VERSION'))
-	define('LIVE_STREAM_VERSION', '1.0.4.2');
+	define('LIVE_STREAM_VERSION', '1.0.4.3');
 
 
 add_action( 'init', 'live_stream_init_proc' );
@@ -243,7 +243,7 @@ class LiveStreamWidget extends WP_Widget {
 
 				delete_transient( 'live_stream_widget_terms_'. $instance['show_users_content'] .'_'. $tax_slug );
 			}
-		}
+		} 
 
 		if (isset($new_instance['title']))
 			$instance['title'] 			= strip_tags($new_instance['title']);
@@ -282,7 +282,9 @@ class LiveStreamWidget extends WP_Widget {
 
 		if (isset($new_instance['content_terms']))
 			$instance['content_terms']	= $new_instance['content_terms'];
-		
+		else
+			$instance['content_terms']  = array();
+			
 		if ((isset($new_instance['show_avatar'])) && ($new_instance['show_avatar'] == "on"))
 			$instance['show_avatar']	= $new_instance['show_avatar'];
 		else
