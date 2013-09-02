@@ -1,15 +1,15 @@
 # Translation of the WordPress plugin   by .
-# Copyright (C) 2012 
+# Copyright (C) 2013 
 # This file is distributed under the same license as the  package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2012.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2013.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version:  \n"
 "Report-Msgid-Bugs-To: http://wordpress.org/tag/live-stream-widget\n"
-"POT-Creation-Date: 2012-09-19 17:39-0500\n"
-"PO-Revision-Date: 2012-MO-DA HO:MI+ZONE\n"
+"POT-Creation-Date: 2013-09-02 09:07-0500\n"
+"PO-Revision-Date: 2013-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -34,112 +34,140 @@ msgid ""
 "strong>."
 msgstr ""
 
-#: live-stream.php:121
+#: live-stream.php:118
 msgid "Show Posts and Comments in a Twitter-like updating widget"
 msgstr ""
 
-#: live-stream.php:128
+#: live-stream.php:125
 msgid "Live Stream"
 msgstr ""
 
-#: live-stream.php:353
+#: live-stream.php:370
 msgid "Widget Title:"
 msgstr ""
 
-#: live-stream.php:364
+#: live-stream.php:381
 msgid "Show Author Avatar?"
 msgstr ""
 
-#: live-stream.php:372
+#: live-stream.php:390
+msgid "Open Links in new Window?"
+msgstr ""
+
+#: live-stream.php:398
 msgid "Maximum items to show."
 msgstr ""
 
-#: live-stream.php:387
-msgid "Content Loading"
-msgstr ""
-
-#: live-stream.php:392
-msgid "Looping - Continuous Scroll. No new content."
-msgstr ""
-
-#: live-stream.php:394
-msgid "Live - Load new content via AJAX. No scrolling."
-msgstr ""
-
-#: live-stream.php:405
-msgid "Show Vertical Scrollbar?"
-msgstr ""
-
-#: live-stream.php:413
-msgid "Number of second delay for scrolling/polling"
+#: live-stream.php:409
+msgid "Show chars from item content. 0 for none. Will append ... after"
 msgstr ""
 
 #: live-stream.php:424
-msgid "Widget Height"
+msgid "Content Loading"
 msgstr ""
 
 #: live-stream.php:429
-msgid "200px - approx. 2-3 items"
+msgid "Looping - Continuous Scroll. No new content."
 msgstr ""
 
 #: live-stream.php:431
+msgid "Live - Load new content via AJAX. No scrolling."
+msgstr ""
+
+#: live-stream.php:442
+msgid "Show Vertical Scrollbar?"
+msgstr ""
+
+#: live-stream.php:450
+msgid "Number of second delay for scrolling/polling"
+msgstr ""
+
+#: live-stream.php:461
+msgid "Widget Height"
+msgstr ""
+
+#: live-stream.php:466
+msgid "200px - approx. 2-3 items"
+msgstr ""
+
+#: live-stream.php:468
 msgid "350px - approx. 4-5 items"
 msgstr ""
 
-#: live-stream.php:433
+#: live-stream.php:470
 msgid "500px - approx. 6-8 items"
 msgstr ""
 
-#: live-stream.php:435
+#: live-stream.php:472
 msgid "other - provide your own height"
 msgstr ""
 
-#: live-stream.php:440
+#: live-stream.php:477
 msgid ""
 "Specify Widget Height: <em>include px, em, etc. qualifies i.e. 300px</em>"
 msgstr ""
 
-#: live-stream.php:460
-msgid "What content to show"
-msgstr ""
-
-#: live-stream.php:464
+#: live-stream.php:501
 msgid "Local - Content from only this site."
 msgstr ""
 
-#: live-stream.php:467
-msgid "Network - Content from all sites created by users from this site."
+#: live-stream.php:502
+msgid "Site - Content from all sites created by users from this site."
 msgstr ""
 
-#: live-stream.php:471
+#: live-stream.php:503
 msgid "All - Content by all users from all sites"
 msgstr ""
 
-#: live-stream.php:486
+#: live-stream.php:511
+msgid "What content to show"
+msgstr ""
+
+#: live-stream.php:534
 msgid "Content Types:"
 msgstr ""
 
-#: live-stream.php:492
+#: live-stream.php:539
 msgid "All Types"
 msgstr ""
 
-#: live-stream.php:554
-msgid "Selected terms"
+#: live-stream.php:597
+msgid "Select all"
 msgstr ""
 
-#: live-stream.php:1224
-msgid " commented on "
+#: live-stream.php:597
+msgid "Click to show/hide taxonomy terms"
 msgstr ""
 
-#: live-stream.php:1239
+#: live-stream.php:608
+msgid "No terms selected"
+msgstr ""
+
+#: live-stream.php:1407
+msgid "commented on"
+msgstr ""
+
+#: live-stream.php:1427
 msgid "published"
 msgstr ""
 
-#: live-stream.php:1258
+#: live-stream.php:1442
+msgid "via"
+msgstr ""
+
+#: live-stream.php:1449
 #, php-format
 msgid "%s ago "
 msgstr ""
 
-#: live-stream.php:1265
+#: live-stream.php:1456 live-stream.php:1468
+msgid "comment"
+msgstr ""
+
+#: live-stream.php:1461
+msgid "comments"
+msgstr ""
+
+#: live-stream.php:1472
 msgid "visit"
 msgstr ""

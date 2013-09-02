@@ -6,6 +6,13 @@ Author: Paul Menard (incsub)
 Change Log:
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------
+
+1.0.4.3 - 2013/09/02
+----------------------------------------------------------------------
+- Correct issue with warning on regular WordPress sites. 
+- Modified taxonomy terms selection UI to allow unselect for taxonomy terms instead of defaulting to selected all.
+- Added new option to allow setting link target to _blank to force open in new window.
+
 1.0.4.2 - 2013/02/05
 ----------------------------------------------------------------------
 - Corrected issue with double comment content on widget output

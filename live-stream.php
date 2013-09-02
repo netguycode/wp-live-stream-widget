@@ -4,7 +4,7 @@ Plugin Name: Live Stream Widget
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
 Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: Paul Menard (Incsub)
-Version: 1.0.4.2
+Version: 1.0.4.3
 Author URI: http://premium.wpmudev.org/
 WDP ID: 679182
 Text Domain: live-stream-widget
@@ -227,6 +227,10 @@ class LiveStreamWidget extends WP_Widget {
 	 */
 	function update( $new_instance, $old_instance ) {
 		
+		//echo "new_instance<pre>"; print_r($new_instance); echo "</pre>";
+		//echo "old_instance<pre>"; print_r($old_instance); echo "</pre>";
+		//die();
+		
 		$instance = $old_instance;
 
 		// First thing we want to do is delete the existing transients
@@ -284,6 +288,11 @@ class LiveStreamWidget extends WP_Widget {
 		else
 			$instance['show_avatar']	= '';
 
+		if ((isset($new_instance['link_target'])) && ($new_instance['link_target'] == "on"))
+			$instance['link_target']	= $new_instance['link_target'];
+		else
+			$instance['link_target']	= '';
+
 		if (isset($new_instance['show_users_content'])) {
 			$instance['show_users_content']	= esc_attr($new_instance['show_users_content']);
 			if (($instance['show_users_content'] != 'local') && ($instance['show_users_content'] != 'site') && ($instance['show_users_content'] != "all"))
@@ -308,6 +317,9 @@ class LiveStreamWidget extends WP_Widget {
 			if (!$instance['interval_seconds'])
 				$instance['interval_seconds'] = 3;
 		}
+		
+		//echo "instance<pre>"; print_r($instance); echo "</pre>";
+		//die();
 	    return $instance;
 	}
 
@@ -323,6 +335,7 @@ class LiveStreamWidget extends WP_Widget {
 		$defaults = array( 
 			'title' 				=> 	'',
 			'show_avatar'			=>	'on',
+			'link_target'			=>	'',
 			'show_users_content'	=>	'local',
 			'height'				=>	'200px',
 			'height_other'			=>	'',
@@ -347,6 +360,7 @@ class LiveStreamWidget extends WP_Widget {
 		$this->show_widget_admin_content_char_count($instance);
 		$this->show_widget_admin_interval_seconds($instance);
 		$this->show_widget_admin_avatars($instance);
+		$this->show_widget_admin_link_target($instance);
 		$this->show_widget_admin_scrollbars($instance);
 
 	}
@@ -365,6 +379,15 @@ class LiveStreamWidget extends WP_Widget {
 		<p><input class="checkbox" type="checkbox" <?php checked( $instance['show_avatar'], 'on' ); ?> 
 				id="<?php echo $this->get_field_id( 'show_avatar' ); ?>" name="<?php echo $this->get_field_name( 'show_avatar' ); ?>" /> 
 			<label for="<?php echo $this->get_field_id( 'show_avatar' ); ?>"><?php _e('Show Author Avatar?', 'live-stream-widget'); ?></label>
+		</p>
+		<?php
+	}
+
+	function show_widget_admin_link_target($instance) {
+		?>
+		<p><input class="checkbox" type="checkbox" <?php checked( $instance['link_target'], 'on' ); ?> 
+				id="<?php echo $this->get_field_id( 'link_target' ); ?>" name="<?php echo $this->get_field_name( 'link_target' ); ?>" /> 
+			<label for="<?php echo $this->get_field_id( 'link_target' ); ?>"><?php _e('Open Links in new Window?', 'live-stream-widget'); ?></label>
 		</p>
 		<?php
 	}
@@ -531,10 +554,11 @@ class LiveStreamWidget extends WP_Widget {
 		global $wpdb;
 		
 		$tax_names = array('category', 'post_tag');
+		
 		foreach($tax_names as $tax_slug) {
 
 			$tax_terms = get_source_tax_terms($tax_slug, $instance['show_users_content']);
-			//echo "tax_terms<pre>"; print_r($tax_terms); echo "</pre>";
+
 			if (($tax_terms) && (count($tax_terms))) {		
 						
 				$taxonomy = get_taxonomy( $tax_slug );
@@ -562,26 +586,28 @@ class LiveStreamWidget extends WP_Widget {
 					}
 					
 					// Set our default taxonomy if nothing is yet set for this taxonomy. Will set the 'Select all' checkbox on initial load.
-					if ((!isset($instance['content_terms']['_select_all_'][$tax_slug])) 
-					 && ((!isset($instance['content_terms'][$tax_slug])) || (!count($instance['content_terms'][$tax_slug])))) {
-						$instance['content_terms']['_select_all_'][$tax_slug] = "on";
-					}
+//					if ((!isset($instance['content_terms']['_select_all_'][$tax_slug])) 
+//					 && ((!isset($instance['content_terms'][$tax_slug])) || (!count($instance['content_terms'][$tax_slug])))) {
+//						$instance['content_terms']['_select_all_'][$tax_slug] = "on";
+//					}
 					?>
-					<p><label for="<?php echo $this->get_field_id( 'content_terms' ); ?>-<?php echo $tax_slug; ?>"><?php 
-							echo $taxonomy->labels->name; ?></label> <span style="float:right;"><input class="live-stream-terms-select-all"
-							id="<?php echo $this->get_field_id( 'content_terms' ); ?>_select_all_<?php echo $tax_slug; ?>" 
-							<?php if (isset($instance['content_terms']['_select_all_'][$tax_slug])) { echo ' checked="checked" '; } ?>
-							name="<?php echo $this->get_field_name( 'content_terms' ); ?>[_select_all_][<?php echo $tax_slug; ?>]" type="checkbox"> <label
-							 for="<?php echo $this->get_field_id( 'content_terms' ); ?>_select_all_<?php echo $tax_slug; ?>">Select all</label ></span></p>
+					<p><input class="live-stream-terms-select-all"id="<?php echo $this->get_field_id( 'content_terms' ); ?>_select_all_<?php echo $tax_slug; ?>" 
+						<?php if (isset($instance['content_terms']['_select_all_'][$tax_slug])) { echo ' checked="checked" '; } ?>
+						name="<?php echo $this->get_field_name( 'content_terms' ); ?>[_select_all_][<?php echo $tax_slug; ?>]" type="checkbox"> <label
+							 for="<?php echo $this->get_field_id( 'content_terms' ); ?>_select_all_<?php echo $tax_slug; ?>"><?php _e('Select all', 'live-stream-widget'); ?></label > - <a class="live-stream-terms-show" href="#" class="" title="<?php _e('Click to show/hide taxonomy terms', 'live-stream-widget'); ?>"><?php 
+							echo $taxonomy->labels->name; ?></a>
+							
 						
-					<div id="<?php echo $this->get_field_id( 'content_terms' ); ?>-<?php echo $tax_slug; ?>-wrapper" <?php 
-					if (isset($instance['content_terms']['_select_all_'][$tax_slug])) { echo ' style="display:none" '; } ?>>
-						<p><a class="live-stream-terms-show" href="#" class=""><?php _e('Selected terms', 'live-stream-widget'); ?></a>: <span
+					<div id="<?php echo $this->get_field_id( 'content_terms' ); ?>-<?php echo $tax_slug; ?>-wrapper" 
+						class="terms-wrapper" <?php if (isset($instance['content_terms']['_select_all_'][$tax_slug])) { echo ' style="display:none" '; } ?>>
+						<p><span
 							 class="selected-terms"><?php 
 							if (count($selected_term_names)) {
 								echo implode(', ', $selected_term_names); 
-							} ?></span></p>
-						<ul class="live-stream-admin-checklist" style="display: none">
+							} else {
+								_e('No terms selected', 'live-stream-widget');
+							}?></span></p>
+						<ul class="live-stream-admin-checklist" style="display:none">
 						<?php
 							$walker = new Walker_Live_Stream_Checklist;
 							$walker->field_name_prefix 	= $this->get_field_name( 'content_terms')."[". $tax_slug ."]";
@@ -872,23 +898,31 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 	
 	$tax_terms_query_str = '';
 	if ( (isset($instance['content_terms'])) && (count($instance['content_terms'])) ) {
+//echo "content_terms<pre>"; print_r($instance['content_terms']); echo "</pre>";
+//die();
 
 		$tax_terms_array = array();
 		
 		foreach($instance['content_terms'] as $tax_slug => $tax_terms) {
 
+			//echo "tax_slug=[". $tax_slug ."]<br />";
+			//echo "tax_terms<pre>"; print_r($tax_terms); echo "</pre>";
+			//continue;
+			
 			// Ignore our secret tax_slug. This is where we store the option to select all terms
 			if ($tax_slug == "_select_all_")
 				continue;
 			
 			// If the user selected the 'select all' checkbox on the terms set then we can ignore the taxonomy terms selected
 			if (!isset($instance['content_terms']['_select_all_'][$tax_slug])) {
-				foreach($tax_terms_transient as $tax_term) {
-					$tax_terms_array[$tax_slug][] = $tax_term->term_id;						
-				}
+
+				if (!isset($tax_terms_array[$tax_slug]))
+					$tax_terms_array[$tax_slug] = array();
+			
+				$tax_terms_array[$tax_slug] = $tax_terms;
 			}
 		}
-		
+
 		if (count($tax_terms_array)) {
 			foreach($tax_terms_array as $tax_slug => $tax_set) {
 				if (!count($tax_set)) continue;
@@ -931,6 +965,7 @@ function live_stream_get_post_items($instance, $widget_id=0) {
 			if ((isset($instance['timekey'])) && (intval($instance['timekey']))) {
 				add_filter( 'posts_where', 'live_stream_filter_posts_timekey_where' );
 			}
+			//echo "post_query_args<pre>"; print_r($post_query_args); echo "</pre>";
 			
 			$post_query = new WP_Query($post_query_args);
 
@@ -1261,14 +1296,22 @@ function live_stream_build_display($instance, $items, $echo = true) {
 				} 
 			}
 		} else {
+			$blog = new stdClass;
 			$blog->blogname		= get_option( 'blogname' );
 			$blog->siteurl		= get_option( 'siteurl' );													
+			//echo "blog<pre>"; print_r($blog); echo "</pre>";
 		}
 		
 		$wrapper_class = "live-stream-item-". $item->post_type;
 		if ((isset($instance['show_avatar'])) && ($instance['show_avatar'] == "on")) {
 			$wrapper_class = " live-stream-text-has-avatar";
 		} 
+
+		if ((isset($instance['link_target'])) && ($instance['link_target'] == "on")) {
+			$link_target = ' target="_blank" ';
+		} else {
+			$link_target = '';
+		}
 
 		$item_output = '<li id="live-stream-item-'. $key .'" class="live-stream-item '. $wrapper_class .'">';
 		
@@ -1305,13 +1348,13 @@ function live_stream_build_display($instance, $items, $echo = true) {
 		
 		/* Build an anchor wrapper for the author which is used in multiple places */
 		if ((isset($blog->siteurl)) && (intval($item->post_author_id) )) {
-			$author_anchor_begin 	= '<a class="live-stream-item-author" href="'. $blog->siteurl .'?author='
+			$author_anchor_begin 	= '<a '. $link_target .' class="live-stream-item-author" href="'. $blog->siteurl .'?author='
 				. $item->post_author_id .'">';
 			$author_anchor_end 		= '</a>';
 			
 		} else {
 			if ($item->post_type == "comment") {
-				$author_anchor_begin 	= '<a class="live-stream-item-author" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
+				$author_anchor_begin 	= '<a '. $link_target .' class="live-stream-item-author" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
 				$author_anchor_end 		= '</a>';
 			} else {			
 				$author_anchor_begin 	= '';
@@ -1366,7 +1409,7 @@ function live_stream_build_display($instance, $items, $echo = true) {
 				/* Show the Post Title */
 				if (isset($blogs[$item->blog_id])) {
 					if (strlen($item_output)) $item_output .= " "; ;
-					$post_anchor_begin 	= '<a class="live-stream-item-title" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
+					$post_anchor_begin 	= '<a '. $link_target .' class="live-stream-item-title" href="'. $item->post_permalink .'#comment-'. $item->comment_id .'">';
 					$post_anchor_end 	= '</a>';
 
 				} else {
@@ -1385,7 +1428,7 @@ function live_stream_build_display($instance, $items, $echo = true) {
 
 				/* Show the Post Title */
 				if (strlen($item_output)) $item_output .= " ";
-				$item_output .= '<a class="live-stream-item-title" href="'. $item->post_permalink .'">'. $item->post_title ."</a> ";
+				$item_output .= '<a '. $link_target .' class="live-stream-item-title" href="'. $item->post_permalink .'">'. $item->post_title ."</a> ";
 				
 				//if (strlen($item_content)) $item_output .= " ". $item_content;
 			}
@@ -1394,7 +1437,7 @@ function live_stream_build_display($instance, $items, $echo = true) {
 			/* Show the Blog domain */
 			if ((isset($instance['show_users_content'])) && ($instance['show_users_content'] != "local")) {
 				if (isset($blog->siteurl)) {
-					$site_anchor_begin = '<a class="live-stream-item-blog" href="'. $blog->siteurl .'">';
+					$site_anchor_begin = '<a '. $link_target .' class="live-stream-item-blog" href="'. $blog->siteurl .'">';
 					$site_anchor_end	= '</a>';
 					$item_output .= __("via", 'live-stream-widget') ." ". $site_anchor_begin . $blog->blogname . $site_anchor_end ." ";
 				}
@@ -1412,21 +1455,21 @@ function live_stream_build_display($instance, $items, $echo = true) {
 					$comment_count = get_comments_number( $item->post_id );
 					$comment_label = __('comment', 'live-stream-widget') ." (". $comment_count .")";
 
-					$item_output .= '<a class="live-stream-text-footer-date" href="'. 
+					$item_output .= '<a '. $link_target .' class="live-stream-text-footer-date" href="'. 
 						$item->post_permalink .'#comments">'. $comment_label .'</a>';
 				} else {
 					$comment_label = __('comments', 'live-stream-widget');					
-					$item_output .= '<a class="live-stream-text-footer-date" href="'. 
+					$item_output .= '<a '. $link_target .' class="live-stream-text-footer-date" href="'. 
 						$item->post_permalink .'#comments">'. $comment_label .'</a>';
 				}
 			} else {
 				if (($instance['show_users_content'] == "local") && (array_search("post", $instance['content_types']) !== false)) {
 					$comment_count = get_comments_number( $item->post_id );
 					$comment_label = __('comment', 'live-stream-widget') ." (". $comment_count .")";
-					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'#comments">'. $comment_label .'</a>';
+					$item_output .= '<a '. $link_target .' class="live-stream-text-footer-date" href="'. $item->post_permalink .'#comments">'. $comment_label .'</a>';
 					
 				} else {
-					$item_output .= '<a class="live-stream-text-footer-date" href="'. $item->post_permalink .'">'. __('visit', 'live-stream-widget') .'</a>';					
+					$item_output .= '<a '. $link_target.' class="live-stream-text-footer-date" href="'. $item->post_permalink .'">'. __('visit', 'live-stream-widget') .'</a>';					
 				}
 			}
 			$item_output .= '</div>';

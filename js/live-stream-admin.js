@@ -14,23 +14,32 @@ jQuery(document).ready( function($) {
 	
 	function live_stream_terms_show(event) {
 
-		var parent_item = $(this).parent();
-		var ul_list = $(parent_item).next('ul.live-stream-admin-checklist');
-		if ($(ul_list).is(":visible"))
+		var parent = jQuery(this).parent();
+		var select_all = jQuery('input.live-stream-terms-select-all', parent);
+		if (jQuery(select_all).is(':checked')) {
+			//console.log('select all is CHECKED');
+			jQuery(select_all).removeAttr('checked');
+		} 
+		var wrapper = jQuery(this).parent().next('div.terms-wrapper');
+		if (!jQuery(wrapper).is(":visible"))
+			jQuery(wrapper).show();
+		
+		var wrapper_ul = jQuery('ul', wrapper);
+		if (jQuery(wrapper_ul).is(":visible"))
 		{
-			$(ul_list).slideUp();
-
+			jQuery(wrapper_ul).slideUp();
 		} else {		
-			$(ul_list).slideDown();		
+			jQuery(wrapper_ul).slideDown();		
 		}
+
 		event.stopImmediatePropagation();
 		return false;
 	}
 	
 	function live_stream_checklist_click(event) {
 
-		var parent_div = $(this).parent().parent().parent().parent();
-		var parent_ul = $(this).parent().parent().parent();
+		var parent_div = jQuery(this).parents('div.terms-wrapper');
+		var parent_ul = $(this).parents('ul');
 
 		selected_terms_array = [];
 
@@ -43,20 +52,20 @@ jQuery(document).ready( function($) {
 		if (selected_terms_array.length) {
 			selected_terms_array.sort();
 			selected_terms_html = selected_terms_array.join(', ');
-			$(parent_div).find('p span.selected-terms').html(selected_terms_html);
+			jQuery(parent_div).find('p span.selected-terms').html(selected_terms_html);
 		} else {
-			$(parent_div).find('p span.selected-terms').html('');
+			jQuery(parent_div).find('p span.selected-terms').html('No terms selected');
 		}
 		event.stopImmediatePropagation();
 		return;
 	}
 	
 	function live_Stream_terms_select_all_click(event) {
-		var parent_p = $(this).parent().parent();
+		var wrapper = jQuery(this).parent().next('div.terms-wrapper');
 		if (jQuery(this).is(':checked')) {
-			jQuery(parent_p).next('div').hide();
+			jQuery(wrapper).hide();
 		} else {
-			jQuery(parent_p).next('div').slideDown('slow');
+			jQuery(wrapper).slideDown('slow');
 		}
 		event.stopImmediatePropagation();
 		return;
