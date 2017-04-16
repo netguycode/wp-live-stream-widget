@@ -111,7 +111,7 @@ class LiveStreamWidget extends WP_Widget {
 	/**
  	* Widget setup.
  	*/
- 	function LiveStreamWidget() {
+ 	function __construct() {
  		/* Widget settings. */
  		$widget_ops = array( 
 			'classname' => 'live-stream-widget', 
@@ -122,7 +122,7 @@ class LiveStreamWidget extends WP_Widget {
  		$control_ops = array( 'width' => 350, 'height' => 350, 'id_base' => 'live-stream-widget' );
 
  		/* Create the widget. */
- 		$this->WP_Widget( 'live-stream-widget', __('Live Stream', 'live-stream-widget'), $widget_ops, $control_ops );
+ 		parent::__construct( 'live-stream-widget', __('Live Stream', 'live-stream-widget'), $widget_ops, $control_ops );
 	}
 
 	/**
@@ -641,17 +641,17 @@ class Walker_Live_Stream_Checklist extends Walker {
 	var $field_name_prefix;
 	var $field_id_prefix;
 	
-	function start_lvl(&$output, $depth, $args) {
+	function start_lvl(&$output, $depth = 0, $args = array()) {
 		$indent = str_repeat("\t", $depth);
 		$output .= "$indent<ul class='children'>\n";
 	}
 
-	function end_lvl(&$output, $depth, $args) {
+	function end_lvl(&$output, $depth = 0, $args = array()) {
 		$indent = str_repeat("\t", $depth);
 		$output .= "$indent</ul>\n";
 	}
 
-	function start_el(&$output, $category, $depth, $args) {
+	function start_el(&$output, $category, $depth = 0, $args = array(), $id = 0) {
 		extract($args);
 		if ( empty($taxonomy) )
 			$taxonomy = 'category';
@@ -671,7 +671,7 @@ class Walker_Live_Stream_Checklist extends Walker {
 			'<span class="label-text">'. esc_html( apply_filters('the_category', $category->name )) . '</span></label>';
 	}
 
-	function end_el(&$output, $category, $depth, $args) {
+	function end_el(&$output, $category, $depth = 0, $args = array(), $id = 0) {
 		$output .= "</li>\n";
 	}
 }

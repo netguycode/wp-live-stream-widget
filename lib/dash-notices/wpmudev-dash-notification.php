@@ -6,7 +6,7 @@ if ( !class_exists('WPMUDEV_Dashboard_Notice') ) {
 		
 		var $version = '2.0';
 		
-		function WPMUDEV_Dashboard_Notice() {
+		function __construct() {
 			add_action( 'plugins_loaded', array( &$this, 'init' ) ); 
 		}
 		
