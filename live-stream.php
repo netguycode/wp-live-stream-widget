@@ -4,7 +4,7 @@ Plugin Name: Live Stream Widget
 Plugin URI: http://premium.wpmudev.org/project/live-stream-widget
 Description: Show latest posts and comments in a continuously updating and slick looking widget.
 Author: WPMU DEV
-Version: 1.0.5-BETA-1
+Version: 1.0.5
 Author URI: http://premium.wpmudev.org/
 WDP ID: 679182
 Text Domain: live-stream-widget
